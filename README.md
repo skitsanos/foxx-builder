@@ -1,9 +1,23 @@
 # foxx-builder
-The idea behind this template is to help developers create and run ArangoDB Foxx Services with minimal effort and at no time by keeping each API endpoint method handler in its dedicated module. 
+> ArangoDB allows application developers to write their data access and domain logic as microservices running directly within the database with native access to in-memory data. The **Foxx microservice framework** makes it easy to extend ArangoDB’s own REST API with custom HTTP endpoints using modern JavaScript running on the same V8 engine you know from Node.js and the Google Chrome web browser.
+>
+> Unlike traditional approaches to storing logic in the database (like stored procedures), these microservices can be written as regular structured JavaScript applications that can be easily distributed and version controlled. Depending on your project’s needs Foxx can be used to build anything from optimized REST endpoints performing complex data access to entire standalone applications running directly inside the database.
+>
+> -- [Foxx Microservices](https://www.arangodb.com/docs/stable/foxx.html)
+
+The idea behind this template is to help developers create and run ArangoDB Foxx Microservices with minimal effort and at no time by keeping each API endpoint method handler in its dedicated module. 
 
 So, instead of having complex logic describing complete API endpoint functionality, we split it into smaller blocks that are easier to maintain and provide a better overview of the whole application.
 
-### Folder structure
+### Getting started
+
+Just `git clone` the whole thing, and you are good to go.
+
+```sh
+git clone https://github.com/skitsanos/foxx-builder.git
+```
+
+### Folder Structure
 
 There are very few bits required to make your foxx services up and running. The folder structure defined in a way that will help you to have better control over API application architecture with a minimal coding effort from your side.
 
@@ -62,3 +76,14 @@ Another example - we need to add a ```/api/users``` route that on _GET_ method w
     get.js
     post.js
 ```
+
+In other words, file path your API route method handler mirrors your URL path
+
+| **API endpoint**                 | **Handler**                       |
+| -------------------------------- | --------------------------------- |
+| GET /api/echo                    | /api/echo/get.js                  |
+| GET /api/users                   | /api/users/get.js                 |
+| POST /api/users                  | /api/users/post.js                |
+| GET /api/users/_:id_/tasks       | /api/users/$id/tasks/get.js       |
+| GET /api/users/_:id_/tasks/:task | /api/users/$id/tasks/$task/get.js |
+
