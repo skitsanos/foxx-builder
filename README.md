@@ -22,8 +22,8 @@ git clone https://github.com/skitsanos/foxx-builder.git
 There are very few bits required to make your foxx services up and running. The folder structure defined in a way that will help you to have better control over API application architecture with a minimal coding effort from your side.
 
 ```
-/builder
-/foxx
+/builder/
+/foxx/
 manifest.json
 index.js
 setup.js
@@ -61,20 +61,20 @@ DELETE /api/echo
 To handle this case, we will add to _foxx_ folder our handler in this way:
 
 ```
-/foxx
-  /echo
-    all.js
+/foxx/
+--/echo/
+----all.js
 ```
 
 Another example - we need to add a ```/api/users``` route that on _GET_ method will reply with some data and on _POST_ will accept data sent to API and then respond.
 
 ```
 /foxx
-  /echo
-    all.js
-  /users
-    get.js
-    post.js
+--/echo
+----all.js
+--/users
+----get.js
+----post.js
 ```
 
 In other words, file path your API route method handler mirrors your URL path
@@ -95,4 +95,57 @@ Adding parameters to your URL point handling is pretty simple. Probably, you alr
 | -------------------------------- | --------------------------------- |
 | GET /api/users/_:id_/tasks/:task | /api/users/$id/tasks/$task/get.js |
 
+```
+/foxx/
+--/users/
+----get.js
+----post.js
+----/$id/
+------get.js
+------/tasks/
+--------get.js
+--------post.js
+--------/$task/
+----------get.js
+```
+
 More on path parameters you can read on [https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation](https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation).
+
+
+
+### netlify.toml example
+
+In case if you are using Netlify, here is the example for you how to proxy your URL API calls to ArangoDB Microservices.  
+
+```toml
+[build]
+    base = "."
+    publish = "./dist"
+    functions = "netlify-functions/"
+
+[[redirects]]
+    from = "/*"
+    to = "/index.html"
+    status = 200
+
+[[redirects]]
+    from = "/api/*"
+    to = "http://{YOUR_HOSTNAME}:8529/_db/{YOUR_ENDPOINT}/api/:splat"
+    status = 200
+    force = true
+    headers = {X-From = "Netlify"}
+
+[[headers]]
+    for = "/*"
+
+    [headers.values]
+        x-designed-by = "skitsanos, https://github.com/skitsanos"
+```
+
+Before deploying it on Netlify, make sure there are two variables replaced:
+
+- {YOUR_HOSTNAME} - the hostname where ArangoDb is running
+- {YOUR_ENDPOINT} - endpoint where your flex services are mounted
+
+Also please refer to [Exposing Foxx to the browser](https://www.arangodb.com/docs/stable/foxx-guides-browser.html) on ArangoDB documentation web site.
+
