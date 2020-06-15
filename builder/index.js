@@ -4,7 +4,7 @@
  * @version 1.0.20200615
  * @author Skitsanos, info@skitsanos.com, https://github.com/skitsanos
  */
-
+const {db, query} = require('@arangodb');
 const createRouter = require('@arangodb/foxx/router');
 const fs = require('fs');
 const path = require('path');
@@ -90,7 +90,6 @@ const index = {
                             //check if params were defined
                             if (Object.prototype.hasOwnProperty.call(m, 'params'))
                             {
-                                console.log('Processing params...');
                                 //check for path params
                                 if (Object.prototype.hasOwnProperty.call(m.params, 'path'))
                                 {
@@ -128,6 +127,30 @@ const index = {
     init()
     {
         this.parsePath(this.foxxServicesLocation);
+
+        /**
+         * Add context helpers
+         */
+
+        //get record by id
+        module.context.get = (store, docId) => query`return document(${db._collection(store)}, ${docId})`;
+
+        //insert new record
+        module.context.insert = (store, doc) => query`INSERT ${{
+            ...doc,
+            createdOn: new Date().getTime(),
+            updatedOn: new Date().getTime()
+        }} IN ${db._collection(store)} RETURN UNSET(NEW, "_id", "_rev")`;
+
+        //update existing record
+        module.context.update = (store, docId, doc) => query`UPDATE ${docId} WITH ${{
+            ...doc,
+            updatedOn: new Date().getTime()
+        }} IN ${db._collection(store)} RETURN KEEP(NEW, "_key")`;
+
+        //removing document by id
+        module.context.remove = (store, docId) => query`REMOVE ${docId} IN ${db._collection(store)} RETURN KEEP(OLD, "_key")`;
+
         console.log('>>> foxx services building completed');
     }
 };
