@@ -1,0 +1,10 @@
+{
+  "name": "builder",
+  "version": "1.0.0",
+  "author": {
+    "name": "Skitsanos"
+  },
+  "main": "index.js",
+  "dependencies": {
+  }
+}

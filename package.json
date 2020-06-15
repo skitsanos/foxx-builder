@@ -1,0 +1,14 @@
+{
+  "name": "foxx-builder-api-template",
+  "version": "1.0.0",
+  "description": "Foxx Builder template for rapid API creation",
+  "main": "index.js",
+  "author": "Skitsanos",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "register-foxx-dev-server": "foxx server set local-dev http://dev:sandbox@localhost:8529",
+    "install-foxx-dev": "foxx install /api . --server local-dev --database dev",
+    "replace-foxx-dev": "foxx replace /api . --server local-dev --database dev"
+  }
+}
