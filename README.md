@@ -87,3 +87,12 @@ In other words, file path your API route method handler mirrors your URL path
 | GET /api/users/_:id_/tasks       | /api/users/$id/tasks/get.js       |
 | GET /api/users/_:id_/tasks/:task | /api/users/$id/tasks/$task/get.js |
 
+### Parametrized path
+
+Adding parameters to your URL point handling is pretty simple. Probably, you already noticed from the table above, when we require some parameter, we add its name with $ in front of it in our folder name. Just make sure you don't have duplicating parameters.
+
+| **API endpoint**                 | **Handler**                       |
+| -------------------------------- | --------------------------------- |
+| GET /api/users/_:id_/tasks/:task | /api/users/$id/tasks/$task/get.js |
+
+More on path parameters you can read on [https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation](https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation).
