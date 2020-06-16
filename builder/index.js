@@ -101,18 +101,25 @@ const index = {
                                 {
                                     this.assignParams('query', m.params.query, endpoint);
                                 }
+                            }
 
-                                //check headers
-                                if (Object.prototype.hasOwnProperty.call(m, 'headers'))
-                                {
-                                    this.assignParams('headers', m.headers, endpoint);
-                                }
+                            //check headers
+                            if (Object.prototype.hasOwnProperty.call(m, 'headers'))
+                            {
+                                this.assignParams('headers', m.headers, endpoint);
+                            }
 
-                                //check for body defs
-                                if (Object.prototype.hasOwnProperty.call(m, 'body'))
+                            //check for body defs
+                            if (Object.prototype.hasOwnProperty.call(m, 'body'))
+                            {
+                                if (Boolean(m.body))
                                 {
                                     const {model, mimes, description} = m.body;
                                     endpoint.body(model, mimes, description);
+                                }
+                                else
+                                {
+                                    endpoint.body(null);
                                 }
                             }
                             //assign route handler
