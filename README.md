@@ -111,6 +111,95 @@ Adding parameters to your URL point handling is pretty simple. Probably, you alr
 
 More on path parameters you can read on [https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation](https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation).
 
+### Validating payload sent to your endpoint
+
+For HTTP methods like POST and PUT, you need to add to your handler additional property called `body`. If  it is set to `null`, request payload will be rejected. If you want to enable request body/payload validation, you need to set `body` property with at least adding schema to it.
+
+`body` defines the request body recognized by the endpoint. There can only be one request body definition per endpoint. The definition will also be shown in the route details in the ArangoDB's API documentation.
+
+In the absence of a request body definition, the request object’s *body* property will be initialized to the unprocessed *rawBody* buffer
+
+```javascript
+//users/post.js
+
+module.exports = {
+    contentType: 'application/json',
+    name: 'Create new user',
+    body: {model: joi.object().required()},
+    handler: (req, res)=>
+    {
+        //your code here
+        res.send({result: 'ok'});
+    }
+};
+```
+
+In the absence of a request body definition, the request object’s *body* property will be initialized to the unprocessed *rawBody* buffer.
+
+As defined in ArangoDB's documentation, `body` accepts the following arguments that `foxx-builder` takes as object properties.
+
+- **model**: `Model | Schema | null` (optional)
+
+  A model or joi schema describing the request body. A validation failure will result in an automatic 400 (Bad Request) error response.
+
+  If the value is a model with a `fromClient` method, that method will be applied to the parsed request body.
+
+  If the value is a schema or a model with a schema, the schema will be used to validate the request body and the `value` property of the validation result of the parsed request body will be used instead of the parsed request body itself.
+
+  If the value is a model or a schema and the MIME type has been omitted, the MIME type will default to JSON instead.
+
+  If the value is explicitly set to `null`, no request body will be expected.
+
+  If the value is an array containing exactly one model or schema, the request body will be treated as an array of items matching that model or schema.
+
+- **mimes**: `Array<string>` (optional)
+
+  An array of MIME types the route supports.
+
+  Common non-mime aliases like “json” or “html” are also supported and will be expanded to the appropriate MIME type (e.g. “application/json” and “text/html”).
+
+  If the MIME type is recognized by Foxx the request body will be parsed into the appropriate structure before being validated. Currently only JSON, `application/x-www-form-urlencoded` and multipart formats are supported in this way.
+
+  If the MIME type indicated in the request headers does not match any of the supported MIME types, the first MIME type in the list will be used instead.
+
+  Failure to parse the request body will result in an automatic 400 (Bad Request) error response.
+
+- **description**: `string` (optional)
+
+  A human readable string that will be shown in the API documentation.
+
+### Context Utilities
+
+`foxx-builder` comes with few Context Utilities that you can use to perform basic CRUD operations. Those are `get`, `insert`, `update` and `remove`.
+
+```javascript
+const {get, insert, update, remove} = module.context;
+```
+
+Arguments used for context operations:
+
+- `get(store, docId)` - retrieves document from collection `store` by document `_docId`. 
+- `insert(store, doc)` - inserts document `doc`into collection `store`. Adding `createdOn` and `updatedOn` properties set to current `new Date().getTime()`. Returns `NEW`.
+- `update(store, docId, doc)`- updates collection `store` document `docId`with new content passed in `doc`. Updates `updatedOn` properties set to current `new Date().getTime()`. Returns `NEW`.
+- `remove(store, docId)`- removes document by id `docId` from collection `store`. Returns `OLD` with only `_key` field in it.
+
+```javascript
+//users/$id/get.js
+
+module.exports = {
+    contentType: 'application/json',
+    name: 'Get user by id',
+    handler: (req, res) =>
+    {
+        const {id} = req.pathParams;
+
+        const {get} = module.context;
+        const doc = get('users', id).toArray();
+        res.send({result: doc[0]});
+    }
+};
+```
+
 
 
 ### netlify.toml example
