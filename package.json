@@ -1,14 +1,14 @@
 {
-  "name": "foxx-builder-api-template",
+  "name": "gamestake-api",
   "version": "1.0.0",
-  "description": "Foxx Builder template for rapid API creation",
+  "description": "Gamestake APIs",
   "main": "index.js",
   "author": "Skitsanos",
   "license": "MIT",
   "private": true,
   "scripts": {
-    "register-foxx-dev-server": "foxx server set local-dev http://dev:sandbox@localhost:8529",
-    "install-foxx-dev": "foxx install /api . --server local-dev --database dev",
-    "replace-foxx-dev": "foxx replace /api . --server local-dev --database dev"
+    "register-foxx-dev-server": "foxx server set gamestake http://gamestake:bs4qqWSwUSx8bm5EL3ju@api.skitsanos.com:9999",
+    "install-foxx-dev": "foxx install /api . --server gamestake --database gamestake",
+    "replace-foxx-dev": "foxx replace /api . --server gamestake --database gamestake"
   }
 }
