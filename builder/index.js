@@ -77,8 +77,10 @@ const index = {
                         if (this.supportedMethods.includes(method))
                         {
                             const temp = fullPath.split(this.foxxServicesLocation)[1].split(`${method}.js`)[0];
-                            const pathToHandle = temp.substring(0, temp.length - 1);
+                            const pathToHandle = temp.substring(0, temp.length - 1).replace('\\', '/');
                             const m = require(fullPath);
+
+                            console.log(pathToHandle);
 
                             //parse path params
                             const pathParsed = pathToHandle.replace(/\$/gi, ':');
