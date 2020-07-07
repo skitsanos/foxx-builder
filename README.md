@@ -11,11 +11,37 @@ So, instead of having complex logic describing complete API endpoint functionali
 
 ### Getting started
 
-Just `git clone` the whole thing, and you are good to go.
+1. `git clone` the whole thing, and you are good to go.
 
 ```sh
-git clone https://github.com/skitsanos/foxx-builder.git
+$git clone https://github.com/skitsanos/foxx-builder.git
 ```
+
+In package.json in *scripts* section you will find a number of shortcuts that will help you register your server with foxx-cli, and install or replace Foxx microservice on your server.
+
+2. Install foxx-cli if you don't have it yet [https://github.com/arangodb/foxx-cli#install](https://github.com/arangodb/foxx-cli#install)
+
+3. Register your ArangoDB server so you can install and replace your Foxx Microservices, for example: 
+
+   ```sh
+   $foxx server set dev http://dev:sandbox@localhost:8529
+   ```
+
+By executing this command, we assume that you already created a user _dev_ with password _sandbox_ on _localhost_ server, and we register this server to foxx-cli as _dev_.
+
+If you define servers using the `server` commands, a `.foxxrc` file will be created in your `$HOME` directory, which is typically one of the following paths:
+
+- `/home/$USER` on Linux
+- `/Users/$USER` on macOS
+- `C:\Users\$USER` on Windows
+
+This file contains sections for each server which may contain server credentials should you decide to save them.
+
+4. The example below shows how you can install this Foxx Microservice on _dev_ server to _dev_ database and mount it as _/api_ endpoint.
+
+   ```sh
+   $foxx install /api . --server dev --database dev
+   ```
 
 ### Folder Structure
 
@@ -25,6 +51,7 @@ There are very few bits required to make your foxx services up and running. The 
 /builder/
 /foxx/
 manifest.json
+package.json
 index.js
 setup.js
 ```
