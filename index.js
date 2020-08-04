@@ -37,7 +37,7 @@ module.context.use((req, res, next) =>
             }
 
             //update session expires
-            update('sessions', sid, (new Date().getTime()) + 10000);
+            update('sessions', sid, (new Date().getTime()) + module.context.configuration.sessionTtl);
 
             next();
         }
