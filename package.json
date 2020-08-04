@@ -1,7 +1,7 @@
 {
-  "name": "gamestake-api",
-  "version": "1.0.0",
-  "description": "Gamestake APIs",
+  "name": "foxx-api",
+  "version": "2.0.0",
+  "description": "Foxx API Services",
   "main": "index.js",
   "author": "Skitsanos",
   "license": "MIT",
@@ -10,5 +10,6 @@
     "register-foxx-dev-server": "foxx server set dev http://dev:sandbox@localhost:8529",
     "install-foxx-dev": "foxx install /api . --server dev --database dev",
     "replace-foxx-dev": "foxx replace /api . --server dev --database dev"
-  }
+  },
+  "dependencies": {}
 }
