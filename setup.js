@@ -7,7 +7,7 @@ const collections = [
             {
                 type: 'hash',
                 unique: true,
-                fields: ['username']
+                fields: ['email']
             }
         ]
     },
