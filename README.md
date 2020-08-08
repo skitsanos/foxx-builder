@@ -229,7 +229,35 @@ module.exports = {
 
 
 
-### netlify.toml example
+### Session Management
+
+Foxx-Builder provides you with a generic Session Manager middleware that works via Headers Transport. To enable it, add the following lines into your index.js file:
+
+```js
+const sessions = require('./sessions/index');
+sessions.init();
+```
+
+By default, only /login, /logout, and /password-recovery resources are available without authentication once Session Manager is enabled. If you want to add more endpoints, you can do it in the following way:  
+
+```javascript
+const sessions = require('./sessions/index');
+sessions.allowedResources = [
+    ...sessions.allowedResources,
+    '/echo'
+];
+sessions.init();
+```
+
+
+
+## Integrations
+
+
+
+### Proxying requests on Netlify 
+
+#### netlify.toml example configuration
 
 In case if you are using Netlify, here is the example for you how to proxy your URL API calls to ArangoDB Microservices.  
 
