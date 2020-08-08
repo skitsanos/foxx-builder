@@ -15,6 +15,11 @@ module.exports = {
 
     handler: (req, res) =>
     {
+        if (!req.session)
+        {
+            res.throw(501, 'Session Manager is missing');
+        }
+
         const {username, password} = req.body;
 
         const queryResult = query`
