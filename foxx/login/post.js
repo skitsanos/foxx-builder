@@ -17,12 +17,22 @@ module.exports = {
     {
         const {username, password} = req.body;
 
-        if (crypto.sha384(`${username}:${password}`) !== crypto.sha384('demo:demo'))
+        const queryResult = query`
+            for doc in users
+            filter 
+                doc.email == ${username}
+                &&
+                doc.password == ${crypto.sha384(password)}
+            RETURN doc`
+            .toArray()[0];
+
+        if (!Boolean(queryResult))
         {
             res.throw(403, 'Not Authorized');
         }
 
-        req.session = req.body;
+        req.session.uid = queryResult._key;
+
         const meta = req.sessionStorage.save(req.session);
 
         res.send({result: 'ok', id: meta._key});
