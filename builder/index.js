@@ -9,6 +9,9 @@ const createRouter = require('@arangodb/foxx/router');
 const fs = require('fs');
 const path = require('path');
 
+const queues = require('@arangodb/foxx/queues');
+const queue = queues.create('default');
+
 const index = {
     foxxServicesLocation: path.join(module.context.basePath, '/foxx'),
     supportedMethods: ['all', 'get', 'post', 'put', 'delete', 'patch'],
@@ -176,6 +179,17 @@ const index = {
             return exists
                 ? query`REMOVE ${docId} IN ${db._collection(store)} RETURN KEEP(OLD, "_key")`
                 : null;
+        };
+
+        module.context.runScript = (scriptName, params) =>
+        {
+            queue.push(
+                {
+                    mount: module.context.mount, // i.e. this current service
+                    name: scriptName // script name in the service manifest
+                },
+                params // arguments
+            );
         };
 
         console.log('>>> foxx services building completed');

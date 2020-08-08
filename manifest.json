@@ -5,7 +5,8 @@
   "author": "Skitsanos",
   "main": "index.js",
   "scripts": {
-    "setup": "setup.js"
+    "setup": "setup.js",
+    "telegram_chat_message": "scripts/telegram_chat_message.js"
   },
   "engines": {
     "arangodb": "^3.0.0"
@@ -19,6 +20,11 @@
       "default": 10,
       "type": "integer",
       "description": "The time in seconds since the last update until a session will be considered expired"
+    },
+
+    "telegramToken": {
+      "type": "string",
+      "description": "Telegram bot token, ref: https://core.telegram.org/bots/api#authorizing-your-bot"
     }
   }
 }
