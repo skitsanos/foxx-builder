@@ -1,7 +1,7 @@
 /**
  * ArangoDB Foxx Services Builder
  *
- * @version 1.0.20200615
+ * @version 1.2.20200808
  * @author Skitsanos, info@skitsanos.com, https://github.com/skitsanos
  */
 const {db, query} = require('@arangodb');
@@ -77,7 +77,7 @@ const index = {
                         if (this.supportedMethods.includes(method))
                         {
                             const temp = fullPath.split(this.foxxServicesLocation)[1].split(`${method}.js`)[0];
-                            const pathToHandle = temp.substring(0, temp.length - 1).replace(/\\/gi,'/');
+                            const pathToHandle = temp.substring(0, temp.length - 1).replace(/\\/gi, '/');
                             const m = require(fullPath);
 
                             //parse path params
@@ -120,6 +120,25 @@ const index = {
                                 else
                                 {
                                     endpoint.body(null);
+                                }
+                            }
+
+                            if (Object.prototype.hasOwnProperty.call(m, 'error'))
+                            {
+                                if (Array.isArray(m.error))
+                                {
+                                    if (m.error.length === 0)
+                                    {
+                                        endpoint.error(m.error[0]);
+                                    }
+                                    else
+                                    {
+                                        endpoint.error(m.error[0], m.error[1]);
+                                    }
+                                }
+                                else
+                                {
+                                    endpoint.error(m.error);
                                 }
                             }
                             //assign route handler

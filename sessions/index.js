@@ -10,6 +10,7 @@ const collectionStorage = require('@arangodb/foxx/sessions/storages/collection')
 
 const sessionManager = {
     allowedResources: [
+        '/signup',
         '/login',
         '/logout'
     ],
