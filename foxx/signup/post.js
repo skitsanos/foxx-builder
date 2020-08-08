@@ -28,7 +28,7 @@ module.exports = {
                 password: crypto.sha384(password)
             }).toArray()[0];
 
-            res.send({result: 'ok', qr});
+            res.send({result: qr._key});
         } catch (e)
         {
             res.throw(409, 'User already exists');
