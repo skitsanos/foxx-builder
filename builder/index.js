@@ -123,22 +123,12 @@ const index = {
                                 }
                             }
 
-                            if (Object.prototype.hasOwnProperty.call(m, 'error'))
+                            if (Object.prototype.hasOwnProperty.call(m, 'error') && Array.isArray(m.error))
                             {
-                                if (Array.isArray(m.error))
+                                for (const rule of m.error)
                                 {
-                                    if (m.error.length === 0)
-                                    {
-                                        endpoint.error(m.error[0]);
-                                    }
-                                    else
-                                    {
-                                        endpoint.error(m.error[0], m.error[1]);
-                                    }
-                                }
-                                else
-                                {
-                                    endpoint.error(m.error);
+                                    const [status, message] = Object.entries(rule)[0];
+                                    endpoint.error(Number(status), message);
                                 }
                             }
                             //assign route handler

@@ -12,7 +12,9 @@ module.exports = {
         }).required()
     },
 
-    error: [409, 'Already exists'],
+    error: [
+        {'409': 'Already exists'}
+    ],
 
     handler: (req, res) =>
     {
