@@ -165,7 +165,18 @@ const index = {
         }} IN ${db._collection(store)} RETURN KEEP(NEW, "_key")`;
 
         //removing document by id
-        module.context.remove = (store, docId) => query`REMOVE ${docId} IN ${db._collection(store)} RETURN KEEP(OLD, "_key")`;
+        module.context.remove = (store, docId) =>
+        {
+            if (!docId)
+            {
+                return null;
+            }
+            const exists = module.context.get(store, docId).toArray()[0];
+
+            return exists
+                ? query`REMOVE ${docId} IN ${db._collection(store)} RETURN KEEP(OLD, "_key")`
+                : null;
+        };
 
         console.log('>>> foxx services building completed');
     }
