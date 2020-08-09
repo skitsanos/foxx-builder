@@ -209,6 +209,9 @@ Arguments used for context operations:
 - `insert(store, doc)` - inserts document `doc`into collection `store`. Adding `createdOn` and `updatedOn` properties set to current `new Date().getTime()`. Returns `NEW`.
 - `update(store, docId, doc)`- updates collection `store` document `docId`with new content passed in `doc`. Updates `updatedOn` properties set to current `new Date().getTime()`. Returns `NEW`.
 - `remove(store, docId)`- removes document by id `docId` from collection `store`. Returns `OLD` with only `_key` field in it.
+- `runScript(scriptName, params)` - launches task with the script defined in `manifest.json, Takes _scriptName_ and _params_ as arguments.
+
+**Using context utils**
 
 ```javascript
 //users/$id/get.js
@@ -228,6 +231,44 @@ module.exports = {
 ```
 
 
+
+**Using context utility runScript to send a message into Telegram Channel**
+
+The example below demonstrates how to send a message to Telegram Channel. Once we have our Telegram Bot token and Channel Id, we add into scripts folder this piece of code:  
+
+```javascript
+//scripts/telegram_chat_message.js
+
+const request = require('@arangodb/request');
+
+const {argv} = module.context;
+
+const token = module.context.configuration.telegramToken;
+
+request.post(`https://api.telegram.org/bot${token}/sendMessage`, {
+    json: true,
+    body: argv[0]
+});
+
+module.exports = true;
+```
+
+Now we can call it, for exmaple, from our middleware:
+
+```javascript
+module.context.use((req, res, next) =>
+{
+    const {runScript} = module.context;
+    runScript('telegram_chat_message', {
+        chat_id: '-CHANNEL_ID',
+        text: 'hi there from runScript'
+    });
+
+    next();
+});
+```
+
+Now, on every request, we will receive a message in our Telegram Channel. You can use it, for example, for logging into channel any debug data or stack trace from exceptions fired by your API. Telegram `sendMessage` params are documented at [Telegram Bot API](https://core.telegram.org/bots/api#sendmessage) web page.
 
 ### Session Management
 
