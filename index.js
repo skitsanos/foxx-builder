@@ -4,7 +4,8 @@ builder.init();
 const sessions = require('./sessions/index');
 sessions.allowedResources = [
     ...sessions.allowedResources,
-    '/echo'
+    '/echo',
+    /\/users(\/.*)?/gi
 ];
 
 sessions.init();

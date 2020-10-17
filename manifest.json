@@ -23,6 +23,7 @@
     },
 
     "telegramToken": {
+      "default": "xyz",
       "type": "string",
       "description": "Telegram bot token, ref: https://core.telegram.org/bots/api#authorizing-your-bot"
     }

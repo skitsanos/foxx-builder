@@ -37,7 +37,6 @@ const sessionManager = {
 
         module.context.use((req, res, next) =>
         {
-
             const allowed = this.allowedResources.includes(req.path);
 
             if (allowed)
@@ -46,6 +45,17 @@ const sessionManager = {
             }
             else
             {
+                //check if path is actually RegExp
+                for (const rxp of this.allowedResources)
+                {
+                    if (typeof rxp !== 'string' && rxp.constructor.name === 'RegExp' && req.path.match(rxp))
+                    {
+                        next();
+                        return;
+                    }
+                }
+
+                //otherwise, just continue with sessions based access
                 const sid = req.get('x-session-id');
 
                 if (!Boolean(sid))
