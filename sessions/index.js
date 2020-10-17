@@ -26,12 +26,16 @@ const sessionManager = {
 
         const sessions = sessionMiddleware({
             storage: collectionStorage({
+                autoUpdate: true,
                 collection: db._collection(name),
                 ttl: module.context.configuration.sessionTtl,
                 pruneExpired: true
             }),
             transport
         });
+
+        //Removes all expired sessions from the collection
+        sessions.storage.prune();
 
         module.context.use(sessions);
 

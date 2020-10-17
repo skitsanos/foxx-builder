@@ -23,12 +23,13 @@ module.exports = {
         try
         {
             const {insert} = module.context;
-            const qr = insert('users', {
+            const [qr] = insert('users', {
                 email: username,
                 password: crypto.sha384(password)
-            }).toArray()[0];
+            }).toArray();
 
             res.send({result: qr._key});
+
         } catch (e)
         {
             res.throw(409, 'User already exists');
