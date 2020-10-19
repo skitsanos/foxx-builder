@@ -181,14 +181,15 @@ const index = {
                 : null;
         };
 
-        module.context.runScript = (scriptName, params) =>
+        module.context.runScript = (scriptName, data, opts) =>
         {
             queue.push(
                 {
                     mount: module.context.mount, // i.e. this current service
                     name: scriptName // script name in the service manifest
                 },
-                params // arguments
+                data, // arguments
+                opts
             );
         };
 
