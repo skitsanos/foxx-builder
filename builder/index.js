@@ -183,7 +183,7 @@ const index = {
 
         module.context.runScript = (scriptName, data, opts) =>
         {
-            queue.push(
+            return queue.push(
                 {
                     mount: module.context.mount, // i.e. this current service
                     name: scriptName // script name in the service manifest
