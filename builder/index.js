@@ -1,7 +1,7 @@
 /**
  * ArangoDB Foxx Services Builder
  *
- * @version 1.2.20200808
+ * @version 1.3.20201023
  * @author Skitsanos, info@skitsanos.com, https://github.com/skitsanos
  */
 const {db, query} = require('@arangodb');
@@ -11,6 +11,10 @@ const path = require('path');
 
 const queues = require('@arangodb/foxx/queues');
 const queue = queues.create('default');
+
+const tasks = require('@arangodb/tasks');
+
+const crypto = require('@arangodb/crypto');
 
 const index = {
     foxxServicesLocation: path.join(module.context.basePath, '/foxx'),
@@ -151,6 +155,8 @@ const index = {
          * Add context helpers
          */
 
+        module.context.appRoot = path.join(__dirname, '..');
+
         //get record by id
         module.context.get = (store, docId) => query`return document(${db._collection(store)}, ${docId})`;
 
@@ -193,12 +199,55 @@ const index = {
             );
         };
 
+        /**
+         * Runs single or repeated task
+         * @param id
+         * @param name
+         * @param handler
+         * @param params
+         * @param period
+         */
+        module.context.runTask = (name, handler, params, period) =>
+        {
+            const config = {
+                name,
+                id: crypto.uuidv4(),
+                params: {
+                    ...params,
+                    script: handler,
+                    context: {
+                        appRoot: module.context.appRoot,
+                        mount: module.context.mount,
+                        configuration: module.context.configuration
+                    }
+                },
+                command: p =>
+                {
+                    const {script, context} = p;
+
+                    delete p.script;
+
+                    const m = require(`${context.appRoot}/tasks/${script}.js`);
+                    m(p);
+                }
+            };
+
+            if (period)
+            {
+                config.period = period;
+            }
+
+            tasks.register(config);
+        };
+
         module.context.utils = {
             isEmail(str)
             {
                 return str.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
             }
         };
+
+        console.log('Installed on ', module.context.mount);
 
         console.log('>>> foxx services building completed');
     }
