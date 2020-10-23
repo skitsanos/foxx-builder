@@ -9,3 +9,21 @@ sessions.allowedResources = [
 ];
 
 sessions.init();
+
+/**
+ * Run Google Analytics on each API endpoint request
+ */
+module.context.use((req, res, next) =>
+{
+    const {runTask} = module.context;
+    runTask(
+        'Google Analytics PageView recording',
+        'ga',
+        {
+            clientId: req.headers['x-bb-client-request-uuid'],
+            path: req.path,
+            headers: req.headers
+        });
+
+    next();
+});

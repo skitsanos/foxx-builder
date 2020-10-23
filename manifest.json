@@ -21,7 +21,11 @@
       "type": "integer",
       "description": "The time in seconds since the last update until a session will be considered expired"
     },
-
+    "googleAnalyticsId": {
+      "default": "G-Y32FMJEM1W",
+      "type": "string",
+      "description": "Google Analytics Measurement ID"
+    },
     "telegramToken": {
       "default": "xyz",
       "type": "string",
