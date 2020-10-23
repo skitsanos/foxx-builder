@@ -37,7 +37,7 @@ const task = ({clientId, path, headers, context}) =>
             cm: 'organic',
             de: 'UTF-8', //document encoding
             ua: headers['user-agent'],
-            uip: headers['client-ip'] || headers['remoteAddress']
+            uip: headers['client-ip'] || headers['x-real-ip'] || headers['remoteAddress'] || '127.0.0.1'
         };
 
         if (headers['x-country'])
