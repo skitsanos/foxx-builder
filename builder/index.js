@@ -4,7 +4,7 @@
  * @version 1.3.20201023
  * @author Skitsanos, info@skitsanos.com, https://github.com/skitsanos
  */
-const {db, query} = require('@arangodb');
+const {db, query, aql} = require('@arangodb');
 const createRouter = require('@arangodb/foxx/router');
 const fs = require('fs');
 const path = require('path');
@@ -15,6 +15,7 @@ const queue = queues.create('default');
 const tasks = require('@arangodb/tasks');
 
 const crypto = require('@arangodb/crypto');
+const joi = require('joi');
 
 const index = {
     foxxServicesLocation: path.join(module.context.basePath, '/foxx'),
@@ -158,7 +159,7 @@ const index = {
         module.context.appRoot = path.join(__dirname, '..');
 
         //get record by id
-        module.context.get = (store, docId) => query`return document(${db._collection(store)}, ${docId})`;
+        module.context.get = (store, docId) => query`return unset(document(${db._collection(store)}, ${docId}), "_id", "_rev")`;
 
         //insert new record
         module.context.insert = (store, doc) => query`INSERT ${{
@@ -180,11 +181,12 @@ const index = {
             {
                 return null;
             }
-            const exists = module.context.get(store, docId).toArray()[0];
 
-            return exists
+            const [exists] = module.context.get(store, docId).toArray();
+
+            return Boolean(exists)
                 ? query`REMOVE ${docId} IN ${db._collection(store)} RETURN KEEP(OLD, "_key")`
-                : null;
+                : {toArray: () => []};
         };
 
         module.context.runScript = (scriptName, data, opts) =>
@@ -244,6 +246,65 @@ const index = {
             isEmail(str)
             {
                 return str.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
+            },
+
+            filterBuilder(q = [])
+            {
+                const filtersSchema = joi.array().required().items(joi.object({
+                    key: joi.string().required(),
+                    op: joi.string().valid('=', '~', '>', '<', '%').default('='),
+                    value: joi.any()
+                }));
+
+                const validation = filtersSchema.validate(q);
+                if(validation.error){
+                    throw validation.error;
+                }
+
+                if (q.length === 0)
+                {
+                    return aql.join([aql``], ' ');
+                }
+
+                const parts = [
+                    aql` FILTER`
+                ];
+
+                for (let i = 0; i < q.length; i++)
+                {
+                    const el = q[i];
+                    switch (el.op)
+                    {
+                        case '~':
+                            parts.push(aql` doc[${el.key}] != ${el.value}`);
+                            break;
+
+                        case '>':
+                            parts.push(aql`(doc[${el.key}] > ${el.value})`);
+                            break;
+
+                        case '<':
+                            parts.push(aql` doc[${el.key}] < ${el.value}`);
+                            break;
+
+                        case '%':
+                            parts.push(aql`LIKE(doc[${el.key}], ${el.value}, true)`);
+                            break;
+
+                        default:
+                            parts.push(aql`(doc[${el.key}] == ${el.value})`);
+                            break;
+                    }
+
+                    //parts.push(output);
+
+                    if (i < q.length - 1 && !Boolean(el.logic))
+                    {
+                        parts.push(aql`&&`);
+                    }
+                }
+
+                return aql.join(parts, ' ');
             }
         };
 

@@ -45,7 +45,6 @@ const task = ({clientId, path, headers, context}) =>
             params.geoid = headers['x-country'];
         }
 
-        console.log(params);
         request({
             method: 'get',
             url: 'https://www.google-analytics.com/collect',

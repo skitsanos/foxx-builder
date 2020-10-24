@@ -100,7 +100,7 @@ Another example - we need to add a ```/api/users``` route that on _GET_ method w
 --/echo
 ----all.js
 --/users
-----get.js
+----post.js
 ----post.js
 ```
 
@@ -108,11 +108,11 @@ In other words, file path your API route method handler mirrors your URL path
 
 | **API endpoint**                 | **Handler**                       |
 | -------------------------------- | --------------------------------- |
-| GET /api/echo                    | /api/echo/get.js                  |
-| GET /api/users                   | /api/users/get.js                 |
+| GET /api/echo                    | /api/echo/post.js                  |
+| GET /api/users                   | /api/users/post.js                 |
 | POST /api/users                  | /api/users/post.js                |
-| GET /api/users/_:id_/tasks       | /api/users/$id/tasks/get.js       |
-| GET /api/users/_:id_/tasks/:task | /api/users/$id/tasks/$task/get.js |
+| GET /api/users/_:id_/tasks       | /api/users/$id/tasks/post.js       |
+| GET /api/users/_:id_/tasks/:task | /api/users/$id/tasks/$task/post.js |
 
 ### Parametrized path
 
@@ -120,20 +120,20 @@ Adding parameters to your URL point handling is pretty simple. Probably, you alr
 
 | **API endpoint**                 | **Handler**                       |
 | -------------------------------- | --------------------------------- |
-| GET /api/users/_:id_/tasks/:task | /api/users/$id/tasks/$task/get.js |
+| GET /api/users/_:id_/tasks/:task | /api/users/$id/tasks/$task/post.js |
 
 ```
 /foxx/
 --/users/
-----get.js
+----post.js
 ----post.js
 ----/$id/
-------get.js
+------post.js
 ------/tasks/
---------get.js
+--------post.js
 --------post.js
 --------/$task/
-----------get.js
+----------post.js
 ```
 
 More on path parameters you can read on [https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation](https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation).
@@ -214,7 +214,7 @@ Arguments used for context operations:
 **Using context utils**
 
 ```javascript
-//users/$id/get.js
+//users/$id/post.js
 
 module.exports = {
     contentType: 'application/json',
