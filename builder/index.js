@@ -248,7 +248,7 @@ const index = {
                 return str.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
             },
 
-            filterBuilder(q = [])
+            filterBuilder(q = [], doc = 'doc')
             {
                 const filtersSchema = joi.array().required().items(joi.object({
                     key: joi.string().required(),
@@ -257,7 +257,8 @@ const index = {
                 }));
 
                 const validation = filtersSchema.validate(q);
-                if(validation.error){
+                if (validation.error)
+                {
                     throw validation.error;
                 }
 
@@ -273,26 +274,34 @@ const index = {
                 for (let i = 0; i < q.length; i++)
                 {
                     const el = q[i];
+                    const key = `${doc}${el.key.split('.').map(k => `.${k}`).join('')}`;
+
                     switch (el.op)
                     {
                         case '~':
-                            parts.push(aql` doc[${el.key}] != ${el.value}`);
+                            parts.push(aql.literal(key));
+                            parts.push(aql` != ${el.value}`);
                             break;
 
                         case '>':
-                            parts.push(aql`(doc[${el.key}] > ${el.value})`);
+                            parts.push(aql.literal(key));
+                            parts.push(aql` > ${el.value}`);
                             break;
 
                         case '<':
-                            parts.push(aql` doc[${el.key}] < ${el.value}`);
+                            parts.push(aql.literal(key));
+                            parts.push(aql` < ${el.value}`);
                             break;
 
                         case '%':
-                            parts.push(aql`LIKE(doc[${el.key}], ${el.value}, true)`);
+                            //parts.push(aql.literal('LIKE('));
+                            parts.push(aql.literal(`LIKE(${key},`));
+                            parts.push(aql`${el.value}, true)`);
                             break;
 
                         default:
-                            parts.push(aql`(doc[${el.key}] == ${el.value})`);
+                            parts.push(aql.literal(key));
+                            parts.push(aql` == ${el.value}`);
                             break;
                     }
 
