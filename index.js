@@ -5,6 +5,7 @@ const sessions = require('./sessions/index');
 sessions.allowedResources = [
     ...sessions.allowedResources,
     '/echo',
+    /\/examples(\/.*)?/gi,
     /\/users(\/.*)?/gi
 ];
 
@@ -13,6 +14,7 @@ sessions.init();
 /**
  * Run Google Analytics on each API endpoint request
  */
+/*
 module.context.use((req, res, next) =>
 {
     const {runTask} = module.context;
@@ -26,4 +28,4 @@ module.context.use((req, res, next) =>
         });
 
     next();
-});
+});*/

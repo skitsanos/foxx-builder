@@ -1,6 +1,6 @@
 {
-  "name": "builder",
-  "version": "1.0.0",
+  "name": "foxx-builder-core",
+  "version": "1.6.20201104",
   "author": {
     "name": "Skitsanos"
   },

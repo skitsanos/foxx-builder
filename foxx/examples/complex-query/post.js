@@ -6,19 +6,19 @@
  */
 
 const joi = require('joi');
-const {query} = require('@arangodb');
+const {query, aql} = require('@arangodb');
 
 /*
-    Payload for POST request:
+ Payload for POST request:
 
  {
-     "query": [
-         {
-         "key":"email",
-         "op":"%",
-         "value": "%skitsanos%"
-         }
-     ]
+ "query": [
+ {
+ "key":"email",
+ "op":"%",
+ "value": "%skitsanos%"
+ }
+ ]
  }
  */
 
@@ -32,26 +32,21 @@ module.exports = {
     },
     handler: (req, res) =>
     {
-        const {filterBuilder} = module.context.utils;
+        const {filter} = module.context.utils;
 
-        const {skip, pageSize} = req.queryParams;
+        const {skip = 0, pageSize = 25} = req.queryParams;
 
         const {query: queryPayload} = req.body;
 
-        const qb = filterBuilder(queryPayload);
-
-        console.log(qb);
-
         const queryResult = query`
-            LET skip=${skip ? Number(skip) : 0}
-            LET pageSize=${pageSize ? Number(pageSize) : 25}
+            LET skip=${Number(skip)}
+            LET pageSize=${Number(pageSize)}
             
             for doc in users
-                ${qb}
+                ${filter(queryPayload)}
             limit skip,pageSize
             return doc
         `.toArray();
-
 
         res.send({result: queryResult});
     }
