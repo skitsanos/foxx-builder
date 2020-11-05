@@ -143,13 +143,7 @@ const index = {
     {
         this.parsePath(this.foxxServicesLocation);
         const extensions = require('./context-extensions');
-        console.log(Object.keys(extensions).length, 'context extensions found');
-
         Object.assign(module.context, extensions);
-
-        console.log('Installed on ', module.context.mount);
-
-        console.log('>>> foxx services building completed');
     }
 };
 

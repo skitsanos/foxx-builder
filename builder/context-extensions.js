@@ -78,7 +78,7 @@ const extensions = {
 
                 delete p.script;
 
-                const m = require(`${module.context.appRoot}/tasks/${script}.js`);
+                const m = require(`${context.appRoot}/tasks/${script}.js`);
                 m(p);
             }
         };
