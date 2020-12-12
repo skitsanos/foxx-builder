@@ -1,15 +1,35 @@
-const {query, time} = require('@arangodb');
+const {aql, query, time} = require('@arangodb');
 
 module.exports = {
     contentType: 'application/json',
     name: 'Get users',
     handler: (req, res) =>
     {
+        const {filter} = module.context.utils;
+
         const {skip = 0, pageSize = 25, q} = req.queryParams;
 
         const start = time();
 
-        const searchQuery = Boolean(q) ? `%${q}%` : '%%';
+        let dataQuery;
+
+        try
+        {
+
+            dataQuery = JSON.parse(decodeURI(q));
+            //console.log(dataQuery)
+        } catch (e)
+        {
+            dataQuery = !q
+                ? []
+                : [
+                    {
+                        key: 'email',
+                        op: '%',
+                        value: `%${q}%`
+                    }
+                ];
+        }
 
         const queryResult = query`      
          LET skip=${Number(skip)}
@@ -17,10 +37,7 @@ module.exports = {
         
         LET ds = (
             FOR doc IN users
-                FILTER 
-                    LIKE(doc.name, ${searchQuery}) 
-                    || 
-                    LIKE(doc.email, ${searchQuery})
+                ${filter(dataQuery)}
                 SORT doc._key DESC
                 LIMIT skip,pageSize
             RETURN merge(
@@ -31,10 +48,7 @@ module.exports = {
         )
         
         LET total = (FOR doc IN users 
-            FILTER 
-                LIKE(doc.name, ${searchQuery}) 
-                    || 
-                    LIKE(doc.email, ${searchQuery})
+            ${filter(dataQuery)}
             COLLECT WITH COUNT INTO totalFound 
             RETURN totalFound)[0]
         

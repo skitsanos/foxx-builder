@@ -30,7 +30,7 @@ sessions.init();
  next();
  });*/
 
-module.context.use((req, res, next) =>
+/*module.context.use((req, res, next) =>
 {
     const {runTask} = module.context;
     runTask(
@@ -49,4 +49,4 @@ module.context.use((req, res, next) =>
         });
 
     next();
-});
+});*/

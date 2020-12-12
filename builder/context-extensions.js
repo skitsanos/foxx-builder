@@ -39,16 +39,66 @@ const extensions = {
             : {toArray: () => []};
     },
 
-    runScript: (scriptName, data, opts) =>
-    {
-        return queue.push(
+    //
+    // Queue Jobs
+    //
+    jobs: {
+        /**
+         *
+         * @param scriptName {String} name of the script listed in manifest file
+         * @param data {Object}
+         * @param opts {Object}
+         * @returns {String}
+         */
+        run: (scriptName, data, opts) =>
+        {
+            return queue.push(
+                {
+                    mount: module.context.mount || '/api', // i.e. this current service
+                    name: scriptName // script name in the service manifest
+                },
+                data, // arguments
+                {
+                    success: (result, jobData, job) =>
+                    {
+                        const {db: database} = require('@arangodb');
+                        const updateQuery = global.aqlQuery`REMOVE ${job._key} in _jobs`;
+                        updateQuery.options = {ttl: 5, maxRuntime: 5};
+
+                        database._query(updateQuery);
+                    },
+                    failure: (result, jobData, job) =>
+                    {
+                        console.log(job, result);
+                    },
+                    ...opts
+                }
+            );
+        },
+
+        /**
+         * Aborts scheduled job
+         * @param jobId {String}
+         * @param withRemove {Boolean}
+         */
+        abort: (jobId, withRemove = true) =>
+        {
+            try
             {
-                mount: module.context.mount || '/api', // i.e. this current service
-                name: scriptName // script name in the service manifest
-            },
-            data, // arguments
-            opts
-        );
+                const job = queue.get(jobId);
+                if (job)
+                {
+                    job.abort();
+                    if (withRemove)
+                    {
+                        queue.delete(jobId);
+                    }
+                }
+            } catch (e)
+            {
+                //no job found
+            }
+        }
     },
 
     /**
@@ -101,7 +151,7 @@ const extensions = {
         {
             const filtersSchema = joi.array().required().items(joi.object({
                 key: joi.string().required(),
-                op: joi.string().valid('=', '~', '>', '<', '%').default('='),
+                op: joi.string().valid('=', '~', '>', '<', '?').default('='),
                 value: joi.any()
             }));
 
@@ -142,10 +192,11 @@ const extensions = {
                         parts.push(aql` < ${el.value}`);
                         break;
 
-                    case '%':
+                    case '?':
                         //parts.push(aql.literal('LIKE('));
                         parts.push(aql.literal(`LIKE(${key},`));
-                        parts.push(aql`${el.value}, true)`);
+                        const opValue = `%${el.value}%`;
+                        parts.push(aql`${opValue}, true)`);
                         break;
 
                     default:

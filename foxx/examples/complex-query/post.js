@@ -15,8 +15,8 @@ const {query, aql} = require('@arangodb');
  "query": [
  {
  "key":"email",
- "op":"%",
- "value": "%skitsanos%"
+ "op":"?",
+ "value": "skitsanos"
  }
  ]
  }

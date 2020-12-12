@@ -3,22 +3,7 @@ module.exports = {
     name: 'Echo',
     handler: (req, res) =>
     {
-        const {q = '', skip = 0, pageSize = 10} = req.queryParams;
-
-        let dataQuery;
-
-        try
-        {
-            dataQuery = JSON.parse(decodeURI(q));
-        } catch (e)
-        {
-            dataQuery = [
-                {
-                    key: 'username',
-                    value: q
-                }
-            ];
-        }
+        const {q, skip = 0, pageSize = 10} = req.queryParams;
 
         res.send({
             result: {
@@ -30,8 +15,7 @@ module.exports = {
                 dataFilter: {
                     q,
                     skip,
-                    pageSize,
-                    dataQuery
+                    pageSize
                 },
                 body: req.body
             }
