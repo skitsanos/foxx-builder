@@ -19,8 +19,9 @@ jobs:
         background: true
       #Setup the ArangoDB Database
       - name: Setup Database
-        - command: |
-            #docker exec -it arangodb-dev arangosh --server.username root --server.password openSesame --javascript.execute-string "db._createDatabase('dev',{},[{username: 'dev', passwd: 'sandbox', active: true}]);"
+        command: |
+          echo 'done'
+          #docker exec -it arangodb-dev arangosh --server.username root --server.password openSesame --javascript.execute-string "db._createDatabase('dev',{},[{username: 'dev', passwd: 'sandbox', active: true}]);"
 
       - run:
           name: "Say hello"
