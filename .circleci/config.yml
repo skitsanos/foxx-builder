@@ -60,7 +60,7 @@ jobs:
 
       - run:
           name: "Say hello"
-          command: hurl --test --variables-file .api-test/.vars .api-test/*.hurl
+          command: hurl --test --variables-file .api-test/.vars .api-test/hello.hurl
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
