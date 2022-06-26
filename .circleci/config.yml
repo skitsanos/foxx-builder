@@ -19,6 +19,10 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install Node 16 and utils
+          command: |
+            nvm install 16
+      - run:
           name: Get ArangoDB
           command: docker pull arangodb/arangodb:latest
       - run:
