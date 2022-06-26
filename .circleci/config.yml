@@ -23,13 +23,14 @@ jobs:
           command: docker pull orangeopensource/hurl:latest
       - run:
           name: Start Docker
-          command: docker-compose up --build
+          command: | 
+            docker-compose up -network host
           background: true
 
       - run:
           name: Setup Database
           command: |
-            docker exec -it arangodb-dev arangosh --server.username root --server.password openSesame --javascript.execute-string "db._createDatabase('dev',{},[{username: 'dev', passwd: 'sandbox', active: true}]);"
+            docker exec -network host -it arangodb-dev arangosh --server.username root --server.password openSesame --javascript.execute-string "db._createDatabase('dev',{},[{username: 'dev', passwd: 'sandbox', active: true}]);"
 
       - run:
           name: "Say hello"
