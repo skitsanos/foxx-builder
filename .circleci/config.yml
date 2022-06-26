@@ -31,6 +31,28 @@ jobs:
           background: true
 
       - run:
+          name: Waiting for ArangoDB to Initialize
+          command: |
+            wait_for_url () {
+                echo "Testing $1"
+                max_in_s=$2
+                delay_in_s=1
+                total_in_s=0
+                while [ $total_in_s -le "$max_in_s" ]
+                do
+                  echo "Wait ${total_in_s}s"
+                  curl --connect-timeout 1 $1 
+                  if [ $? -eq 0 ] then
+                    return 0
+                  fi
+                  total_in_s=$(( total_in_s +  delay_in_s))
+                  sleep $delay_in_s
+                done
+                return 1
+            }
+            wait_for_url 'http://localhost:8529' 30
+
+      - run:
           name: Setup Database
           command: |
             docker exec -it arangodb-dev arangosh --server.username root --server.password openSesame --javascript.execute-string "db._createDatabase('dev',{},[{username: 'dev', passwd: 'sandbox', active: true}]);"
