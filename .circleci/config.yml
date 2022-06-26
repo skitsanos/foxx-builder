@@ -20,7 +20,7 @@ jobs:
       - checkout
 
       - run:
-          name: "Install Node 16 and utils"
+          name: "Install Node 16"
           command: |
             nvm install 16
 

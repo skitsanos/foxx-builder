@@ -8,8 +8,26 @@ const createRouter = require('@arangodb/foxx/router');
 const fs = require('fs');
 const path = require('path');
 
+const getServicesBase = () =>
+{
+    const v1Path = path.join(module.context.basePath, 'foxx');
+    if (fs.exists(v1Path))
+    {
+        return v1Path;
+    }
+
+    const v2Path = path.join(module.context.basePath, 'src', 'foxx');
+    if (fs.exists(v2Path))
+    {
+        return v2Path;
+    }
+
+    console.error('Failed to setup services base');
+    process.exit(1);
+};
+
 const index = {
-    foxxServicesLocation: path.join(module.context.basePath, '/foxx'),
+    foxxServicesLocation: getServicesBase(),
     supportedMethods: ['all', 'get', 'post', 'put', 'delete', 'patch', 'head'],
 
     assignParams(type, params, endpoint)
