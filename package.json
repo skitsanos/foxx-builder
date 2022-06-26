@@ -14,7 +14,7 @@
     "register-foxx-dev-server": "foxx server set dev http://dev:sandbox@localhost:8529",
     "install-foxx-dev": "foxx install /api . --server dev --database dev",
     "replace-foxx-dev": "foxx replace /api . --server dev --database dev",
-    "test": "docker run --network host --rm -it -v \"$(pwd)/.api-test\":/app \"orangeopensource/hurl:latest\" --test --variables-file /app/.vars /app/hello.hurl"
+    "test": "docker run --network host --rm -it -v \"$(pwd)/.api-test\":/app \"orangeopensource/hurl:latest\" --test --variables-file /app/.vars /app/*.hurl"
   },
   "dependencies": {}
 }

@@ -1,4 +1,5 @@
 # foxx-builder
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/skitsanos/foxx-builder/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/skitsanos/foxx-builder/tree/master)
 > ArangoDB allows application developers to write their data access and domain logic as microservices running directly within the database with native access to in-memory data. The **Foxx microservice framework** makes it easy to extend ArangoDB’s own REST API with custom HTTP endpoints using modern JavaScript running on the same V8 engine you know from Node.js and the Google Chrome web browser.
 >
 > Unlike traditional approaches to storing logic in the database (like stored procedures), these microservices can be written as regular structured JavaScript applications that can be easily distributed and version controlled. Depending on your project’s needs Foxx can be used to build anything from optimized REST endpoints performing complex data access to entire standalone applications running directly inside the database.
@@ -14,17 +15,17 @@ So, instead of having complex logic describing complete API endpoint functionali
 1. `git clone` the whole thing, and you are good to go.
 
 ```sh
-$git clone https://github.com/skitsanos/foxx-builder.git
+git clone https://github.com/skitsanos/foxx-builder.git
 ```
 
-In package.json in *scripts* section you will find a number of shortcuts that will help you register your server with foxx-cli, and install or replace Foxx microservice on your server.
+In the `package.json` in the *scripts* section, you will find a number of shortcuts that will help you register your server with `foxx-cli`, and install or replace the Foxx microservice on your server.
 
-2. Install foxx-cli if you don't have it yet [https://github.com/arangodb/foxx-cli#install](https://github.com/arangodb/foxx-cli#install)
+2. Install `foxx-cli` if you don't have it yet [https://github.com/arangodb/foxx-cli#install](https://github.com/arangodb/foxx-cli#install)
 
 3. Register your ArangoDB server so you can install and replace your Foxx Microservices, for example: 
 
    ```sh
-   $foxx server set dev http://dev:sandbox@localhost:8529
+   foxx server set dev http://dev:sandbox@localhost:8529
    ```
 
 By executing this command, we assume that you already created a user _dev_ with password _sandbox_ on _localhost_ server, and we register this server to foxx-cli as _dev_.
@@ -40,25 +41,28 @@ This file contains sections for each server which may contain server credentials
 4. The example below shows how you can install this Foxx Microservice on _dev_ server to _dev_ database and mount it as _/api_ endpoint.
 
    ```sh
-   $foxx install /api . --server dev --database dev
+   foxx install /api . --server dev --database dev
    ```
 
 ### Folder Structure
 
-There are very few bits required to make your foxx services up and running. The folder structure defined in a way that will help you to have better control over API application architecture with a minimal coding effort from your side.
+There are very few bits required to make your foxx services up and running. The folder structure is defined in a way that will help you to have better control over API application architecture with a minimal coding effort from your side.
 
 ```
-/builder/
-/foxx/
+src/
+--/builder/
+---- context-extensions.js
+---- index
+--/foxx/
+-- index.js
+-- setup.js
 manifest.json
 package.json
-index.js
-setup.js
 ```
 
-_/builder_ is the actual Foxx Builder service with all its utils
+_/builder_ is the actual Foxx Builder service with all its utils. Unless you want to modify how `foxx-builder` works, you don't need to touch it.
 
-_/foxx_ is the folder where you will create your API service handlers with convention described below;
+_/foxx_ is the folder where you will create your API service handlers with the convention described below;
 
 _manifest.json_ is a Service Manifest file, as described on https://www.arangodb.com/docs/stable/foxx-reference-manifest.html;
 
@@ -89,19 +93,19 @@ To handle this case, we will add to _foxx_ folder our handler in this way:
 
 ```
 /foxx/
---/echo/
-----all.js
+-- /echo/
+---- all.js
 ```
 
 Another example - we need to add a ```/api/users``` route that on _GET_ method will reply with some data and on _POST_ will accept data sent to API and then respond.
 
 ```
 /foxx
---/echo
-----all.js
---/users
-----post.js
-----post.js
+-- /echo
+---- all.js
+-- /users
+---- post.js
+---- post.js
 ```
 
 In other words, file path your API route method handler mirrors your URL path
@@ -124,16 +128,16 @@ Adding parameters to your URL point handling is pretty simple. Probably, you alr
 
 ```
 /foxx/
---/users/
-----post.js
-----post.js
-----/$id/
-------post.js
+-- /users/
+---- post.js
+---- post.js
+---- /$id/
+------ post.js
 ------/tasks/
---------post.js
---------post.js
---------/$task/
-----------post.js
+-------- post.js
+-------- post.js
+-------- /$task/
+---------- post.js
 ```
 
 More on path parameters you can read on [https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation](https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation).
@@ -268,7 +272,7 @@ module.context.use((req, res, next) =>
 });
 ```
 
-Now, on every request, we will receive a message in our Telegram Channel. You can use it, for example, for logging into channel any debug data or stack trace from exceptions fired by your API. Telegram `sendMessage` params are documented at [Telegram Bot API](https://core.telegram.org/bots/api#sendmessage) web page.
+Now, on every request, we will receive a message on our Telegram Channel. You can use it, for example, for logging into the channel any debug data or stack trace from exceptions fired by your API. Telegram `sendMessage` params are documented on the [Telegram Bot API](https://core.telegram.org/bots/api#sendmessage) web page.
 
 ### Session Management
 
@@ -290,6 +294,59 @@ sessions.allowedResources = [
 sessions.init();
 ```
 
+## Developing on Docker
+
+In `Foxx-builder` v.2.x, we added `docker-compose.yml` file and a few shortcuts into `package.json` that will help you to develop your APIs and run them in docker. You can use `npm` or `yarn` in order to run things, just keep in mind that there is an order of actions to take into consideration,
+
+The flow would be like this:
+
+1. Start docker container: `yarn run docker:start`
+2. Setup the development database `yarn run docker:setup-db`
+3. Register development database server with Foxx CLI `yarn run register-foxx-dev-server`
+4. Install Foxx Microservices on `/api` endpoint on development database `yarn run install-foxx-dev`
+
+After microservices are installed, during the development, all you will need to call is a `replace` method - `yarn run replace-foxx-dev`
+
+
+
+## Testing Foxx Services APIs
+
+You use [Hurl](https://hurl.dev) to test your API endpoints.
+
+> Hurl is a command-line tool that runs **HTTP requests** defined in a simple **plain text format**.
+>
+> It can perform requests, capture values, and evaluate queries on headers and body responses. Hurl is very versatile: it can be used for both **fetching data** and **testing HTTP** sessions.
+
+There are two ways you can run hurl tests, - via the docker container or by having hurl installed.
+
+Testing with `hurl` running in docker:
+
+```shell
+docker run --network host --rm -it -v "$(pwd)/.api-test":/app "orangeopensource/hurl:latest" --test --variables-file /app/.vars /app/hello.hurl
+```
+
+Or, if you already have `hurl` installed ([Installation instructions](https://hurl.dev/docs/installation.html))
+
+```shell
+hurl --test --variables-file .api-test/.vars .api-test/*.hurl
+```
+
+`.vars` file contains variables needed for your tests and can look like this:
+
+```
+URL=http://localhost:8529/_db/dev/api
+```
+
+So, all together with variables, you can make an API test that will check if your API is up:
+
+```
+GET {{URL}}/
+
+HTTP/* 200
+```
+
+The `{{URL}}` referres to `URL` variable from `.vars` file.
+
 
 
 ## Integrations
@@ -300,7 +357,7 @@ sessions.init();
 
 #### netlify.toml example configuration
 
-In case if you are using Netlify, here is the example for you how to proxy your URL API calls to ArangoDB Microservices.  
+In case you are using Netlify, here is an example of how to proxy your URL API calls to ArangoDB Microservices.  
 
 ```toml
 [build]
@@ -332,5 +389,5 @@ Before deploying it on Netlify, make sure there are two variables replaced:
 - {YOUR_HOSTNAME} - the hostname where ArangoDb is running
 - {YOUR_ENDPOINT} - endpoint where your flex services are mounted
 
-Also please refer to [Exposing Foxx to the browser](https://www.arangodb.com/docs/stable/foxx-guides-browser.html) on ArangoDB documentation web site.
+Also please refer to [Exposing Foxx to the browser](https://www.arangodb.com/docs/stable/foxx-guides-browser.html) on ArangoDB documentation website.
 
