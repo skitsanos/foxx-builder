@@ -43,7 +43,7 @@ jobs:
                 while [ $total_in_s -le "$max_in_s" ]
                 do
                   echo "Wait ${total_in_s}s"
-                  if (echo -e "GET $1\nHTTP/* 200" | hurl > /dev/null 2>&1;) then
+                  if (echo -e "GET $1\nHTTP/* *" | hurl > /dev/null 2>&1;) then
                     return 0
                   fi
                   total_in_s=$(( total_in_s +  delay_in_s))
