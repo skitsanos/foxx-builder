@@ -6,6 +6,7 @@ version: 2.1
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
   api-test:
+    parallelism: 4
     # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
     docker:
@@ -24,13 +25,13 @@ jobs:
       - run:
           name: Start Docker
           command: | 
-            docker-compose up -network host
+            docker-compose up
           background: true
 
       - run:
           name: Setup Database
           command: |
-            docker exec -network host -it arangodb-dev arangosh --server.username root --server.password openSesame --javascript.execute-string "db._createDatabase('dev',{},[{username: 'dev', passwd: 'sandbox', active: true}]);"
+            docker exec -it arangodb-dev arangosh --server.username root --server.password openSesame --javascript.execute-string "db._createDatabase('dev',{},[{username: 'dev', passwd: 'sandbox', active: true}]);"
 
       - run:
           name: "Say hello"
