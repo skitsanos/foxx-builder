@@ -24,14 +24,6 @@ jobs:
           command: |
             nvm install 16
 
-#      - run:
-#          name: "Install Yarn"
-#          command: |
-#            curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-#            echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-#            sudo apt update
-#            sudo apt install yarn
-
       - run:
           name: "Install Foxx CLI"
           command: |
@@ -83,8 +75,9 @@ jobs:
       - run:
           name: "Register Foxx API services"
           command: |
-            npm run register-foxx-dev-server
-            npm run install-foxx-dev
+            foxx server set dev http://dev:sandbox@localhost:8529
+            foxx install /api . --server dev --database dev
+            foxx list --server dev --database dev
 
       - run:
           name: "Say hello"
