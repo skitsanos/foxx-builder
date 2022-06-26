@@ -1,3 +1,3 @@
 GET {{URL}}/
 
-HTTP/* *
+HTTP/* 200
