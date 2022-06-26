@@ -14,6 +14,10 @@ jobs:
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
       - checkout
+      - setup_remote_docker
+      - run:
+          name: Get Hurl
+          command: docker pull orangeopensource/hurl:latest
       - run:
           name: Start Docker
           command: docker-compose up
