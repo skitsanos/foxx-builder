@@ -36,7 +36,7 @@ jobs:
           name: "Install Foxx CLI"
           command: |
             #yarn global add foxx-cli
-            sudo npm i -g foxx-cli
+            npm i -g foxx-cli
 
       - run:
           name: "Get ArangoDB"
