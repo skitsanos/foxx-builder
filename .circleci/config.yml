@@ -16,6 +16,9 @@ jobs:
       - checkout
       - setup_remote_docker
       - run:
+          name: Get ArangoDB
+          command: docker pull arangodb/arangodb:latest
+      - run:
           name: Get Hurl
           command: docker pull orangeopensource/hurl:latest
       - run:
