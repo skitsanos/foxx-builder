@@ -23,7 +23,7 @@ jobs:
           name: "Install Node 16 and utils"
           command: |
             nvm install 16
-            sudo yarn global add foxx-cli
+            sudo npm i -g foxx-cli
 
       - run:
           name: "Get ArangoDB"
@@ -70,8 +70,8 @@ jobs:
       - run:
           name: "Register Foxx API services"
           command: |
-            yarn run register-foxx-dev-server
-            yarn run install-foxx-dev
+            npm run register-foxx-dev-server
+            npm run install-foxx-dev
 
       - run:
           name: "Say hello"
