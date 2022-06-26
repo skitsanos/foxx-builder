@@ -1,6 +1,6 @@
 {
   "name": "foxx-api",
-  "version": "2.0.0",
+  "version": "2.0.20220626",
   "description": "Foxx API Services",
   "main": "src/index.js",
   "author": "Skitsanos",
