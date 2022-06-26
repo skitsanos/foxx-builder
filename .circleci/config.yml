@@ -14,12 +14,14 @@ jobs:
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
       - checkout
-      - name: Start Docker
-        command: docker-compose up
-        background: true
-      #Setup the ArangoDB Database
-      - name: Setup Database
-        command: |
+      - run:
+          name: Start Docker
+          command: docker-compose up
+          background: true
+
+      - run:
+          name: Setup Database
+          command: |
           echo 'done'
           #docker exec -it arangodb-dev arangosh --server.username root --server.password openSesame --javascript.execute-string "db._createDatabase('dev',{},[{username: 'dev', passwd: 'sandbox', active: true}]);"
 
