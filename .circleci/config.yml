@@ -23,6 +23,7 @@ jobs:
           name: "Install Node 16 and utils"
           command: |
             nvm install 16
+            nvm install npm
             sudo npm i -g foxx-cli
 
       - run:
