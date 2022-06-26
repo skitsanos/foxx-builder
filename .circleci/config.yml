@@ -23,8 +23,19 @@ jobs:
           name: "Install Node 16 and utils"
           command: |
             nvm install 16
-            nvm install npm
-            sudo npm i -g foxx-cli
+
+      - run:
+          name: "Install Yarn"
+          command: |
+            curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+            echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+            sudo apt update
+            sudo apt install yarn
+
+      - run:
+          name: "Install Foxx CLI"
+          command: |
+            yarn global add foxx-cli
 
       - run:
           name: "Get ArangoDB"
