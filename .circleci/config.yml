@@ -23,7 +23,9 @@ jobs:
           command: docker pull arangodb/arangodb:latest
       - run:
           name: Get Hurl
-          command: docker pull orangeopensource/hurl:latest
+          command: |
+            curl -LO https://github.com/Orange-OpenSource/hurl/releases/download/1.6.1/hurl_1.6.1_amd64.deb
+            sudo dpkg -i hurl_1.6.1_amd64.deb
       - run:
           name: Start Docker
           command: | 
@@ -41,8 +43,7 @@ jobs:
                 while [ $total_in_s -le "$max_in_s" ]
                 do
                   echo "Wait ${total_in_s}s"
-                  curl --connect-timeout 1 $1 /dev/null 2>&1
-                  if [ $? -eq 0 ]; then
+                  if (echo -e "GET $1\nHTTP/* 200" | hurl > /dev/null 2>&1;) then
                     return 0
                   fi
                   total_in_s=$(( total_in_s +  delay_in_s))
@@ -50,7 +51,7 @@ jobs:
                 done
                 return 1
             }
-            wait_for_url 'http://localhost:8529' 30
+            wait_for_url 'http://localhost:8529' 60
 
       - run:
           name: Setup Database
