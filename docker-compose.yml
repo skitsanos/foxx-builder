@@ -8,3 +8,5 @@ services:
       - "8529:8529"
     environment:
       - ARANGO_ROOT_PASSWORD=openSesame
+    volumes:
+      - .backup:/backup
