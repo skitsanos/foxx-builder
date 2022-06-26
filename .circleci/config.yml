@@ -23,7 +23,7 @@ jobs:
           command: docker pull orangeopensource/hurl:latest
       - run:
           name: Start Docker
-          command: docker-compose up
+          command: docker-compose up --build
           background: true
 
       - run:
