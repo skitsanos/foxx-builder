@@ -1,9 +1,10 @@
 .idea/
-.backup
 .git/
 .svn/
 .hg/
 ./node_modules/
+.api-test/
+.backup/
 .DS_Store
 docker-compose.yml
 

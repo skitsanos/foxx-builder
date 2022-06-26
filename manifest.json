@@ -1,12 +1,12 @@
 {
   "$schema": "http://json.schemastore.org/foxx-manifest",
   "name": "foxx-service",
-  "version": "1.0.1",
+  "version": "2.0.20220626",
   "author": "Skitsanos",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
-    "setup": "setup.js",
-    "telegram_chat_message": "scripts/telegram_chat_message.js"
+    "setup": "src/setup.js",
+    "telegram_chat_message": "src/scripts/telegram_chat_message.js"
   },
   "engines": {
     "arangodb": "^3.0.0"
