@@ -18,26 +18,31 @@ jobs:
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
       - checkout
+
       - run:
-          name: Install Node 16 and utils
+          name: "Install Node 16 and utils"
           command: |
             nvm install 16
+            sudo yarn global add foxx-cli
+
       - run:
-          name: Get ArangoDB
+          name: "Get ArangoDB"
           command: docker pull arangodb/arangodb:latest
+
       - run:
-          name: Get Hurl
+          name: "Get Hurl"
           command: |
             curl -LO https://github.com/Orange-OpenSource/hurl/releases/download/1.6.1/hurl_1.6.1_amd64.deb
             sudo dpkg -i hurl_1.6.1_amd64.deb
+
       - run:
-          name: Start Docker
+          name: "Start Docker"
           command: | 
             docker-compose up
           background: true
 
       - run:
-          name: Waiting for ArangoDB to Initialize
+          name: "Waiting for ArangoDB to Initialize"
           command: |
             wait_for_url () {
                 echo "Testing $1"
@@ -58,9 +63,15 @@ jobs:
             wait_for_url 'http://localhost:8529' 60
 
       - run:
-          name: Setup Database
+          name: "Setup Database"
           command: |
             docker exec -it arangodb-dev arangosh --server.username root --server.password openSesame --javascript.execute-string "db._createDatabase('dev',{},[{username: 'dev', passwd: 'sandbox', active: true}]);"
+
+      - run:
+          name: "Register Foxx API services"
+          command: |
+            yarn run register-foxx-dev-server
+            yarn run install-foxx-dev
 
       - run:
           name: "Say hello"
@@ -69,6 +80,6 @@ jobs:
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
-  say-hello-workflow:
+  test-api-services:
     jobs:
       - api-test
