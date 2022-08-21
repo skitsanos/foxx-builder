@@ -1,0 +1,6 @@
+[[redirects]]
+from = "/api/*"
+to = "http://localhost:8529/_db/dev/api/:splat"
+status = 200
+force = true
+headers = {X-From = "Netlify", X-Api-Key = "some-api-key-string"}
