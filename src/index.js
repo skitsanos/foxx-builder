@@ -4,39 +4,17 @@ builder.init();
 /**
  * Run Google Analytics on each API endpoint request
  */
-/*
- module.context.use((req, res, next) =>
- {
- const {runTask} = module.context;
- runTask(
- 'Google Analytics PageView recording',
- 'ga',
- {
- clientId: req.headers['x-bb-client-request-uuid'],
- path: req.path,
- headers: req.headers
- });
-
- next();
- });*/
-
-/*module.context.use((req, res, next) =>
+module.context.use((req, _res, next) =>
 {
     const {runTask} = module.context;
     runTask(
-        'Apilitics via Amplitude',
-        'amplitude',
+        'Google Analytics PageView recording',
+        'ga',
         {
-            userId: Boolean(req.session && req.session.uid) ? req.session.uid : '(anonymous)',
-            authorized: Boolean(req.session && req.session.uid),
+            clientId: req.headers['x-user-id'],
             path: req.path,
-            headers: req.headers,
-            events: [
-                {
-                    type: 'prod.site.pageview'
-                }
-            ]
+            headers: req.headers
         });
 
     next();
-});*/
+});
