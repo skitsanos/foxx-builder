@@ -6,7 +6,7 @@
 >
 > -- [Foxx Microservices](https://www.arangodb.com/docs/stable/foxx.html)
 
-The idea behind this template is to help developers create and run ArangoDB Foxx Microservices with minimal effort and at no time by keeping each API endpoint method handler in its dedicated module. 
+The idea behind this template is to help developers create and run ArangoDB Foxx Microservices with minimal effort and at no time by keeping each API endpoint method handler in its dedicated module.
 
 So, instead of having complex logic describing complete API endpoint functionality, we split it into smaller blocks that are easier to maintain and provide a better overview of the whole application.
 
@@ -22,7 +22,7 @@ In the `package.json` in the *scripts* section, you will find a number of shortc
 
 2. Install `foxx-cli` if you don't have it yet [https://github.com/arangodb/foxx-cli#install](https://github.com/arangodb/foxx-cli#install)
 
-3. Register your ArangoDB server so you can install and replace your Foxx Microservices, for example: 
+3. Register your ArangoDB server so you can install and replace your Foxx Microservices, for example:
 
    ```sh
    foxx server set dev http://dev:sandbox@localhost:8529
@@ -36,9 +36,9 @@ If you define servers using the `server` commands, a `.foxxrc` file will be crea
 - `/Users/$USER` on macOS
 - `C:\Users\$USER` on Windows
 
-This file contains sections for each server which may contain server credentials should you decide to save them.
+This file contains sections for each server that may contain server credentials should you decide to save them.
 
-4. The example below shows how you can install this Foxx Microservice on _dev_ server to _dev_ database and mount it as _/api_ endpoint.
+4. The example below shows how you can install this Foxx Microservice on the _dev_ server to the _dev_ database and mount it as _/api_ endpoint.
 
    ```sh
    foxx install /api . --server dev --database dev
@@ -46,7 +46,7 @@ This file contains sections for each server which may contain server credentials
 
 ### Folder Structure
 
-There are very few bits required to make your foxx services up and running. The folder structure is defined in a way that will help you to have better control over API application architecture with a minimal coding effort from your side.
+There are very few bits required to make your Foxx services up and running. The folder structure is defined in a way that will help you to have better control over API application architecture with minimal coding effort from your side.
 
 ```
 src/
@@ -70,7 +70,7 @@ setup.js - Setup script, as described on https://www.arangodb.com/docs/stable/fo
 
 Inside the _/foxx_ folder will be placed API endpoint path handlers, where every part of the path will be correspondent to a dedicated folder that contains an HTTP method handler.
 
-Out of the box, _foxx builder_ supports following HTTP methods:
+Out of the box, _foxx builder_ supports the following HTTP methods:
 - GET
 - POST
 - PUT
@@ -120,7 +120,7 @@ In other words, file path your API route method handler mirrors your URL path
 
 ### Parametrized path
 
-Adding parameters to your URL point handling is pretty simple. Probably, you already noticed from the table above, when we require some parameter, we add its name with $ in front of it in our folder name. Just make sure you don't have duplicating parameters.
+Adding parameters to your URL point handling is pretty simple. Probably, you already noticed from the table above when we require some parameter; we just add its name with $ in front of it in our folder name. Just make sure you don't have duplicating parameters.
 
 | **API endpoint**                 | **Handler**                       |
 | -------------------------------- | --------------------------------- |
@@ -140,15 +140,15 @@ Adding parameters to your URL point handling is pretty simple. Probably, you alr
 ---------- post.js
 ```
 
-More on path parameters you can read on [https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation](https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation).
+More on path parameters you can be read on [https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation](https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation).
 
 ### Validating payload sent to your endpoint
 
-For HTTP methods like POST and PUT, you need to add to your handler additional property called `body`. If  it is set to `null`, request payload will be rejected. If you want to enable request body/payload validation, you need to set `body` property with at least adding schema to it.
+For HTTP methods like POST and PUT, you need to add to your handler additional property called `body`. If it is set to `null`, the request payload will be rejected. If you want to enable request body/payload validation, you need to set `body` property with at least adding schema to it.
 
-`body` defines the request body recognized by the endpoint. There can only be one request body definition per endpoint. The definition will also be shown in the route details in the ArangoDB's API documentation.
+The `body` defines the request body recognized by the endpoint. There can only be one request body definition per endpoint. The definition will also be shown in the route details in ArangoDB's API documentation.
 
-In the absence of a request body definition, the request object’s *body* property will be initialized to the unprocessed *rawBody* buffer
+In the absence of a request body definition, the request object’s *body* property will be initialized to the unprocessed *rawBody* buffer.
 
 ```javascript
 //users/post.js
@@ -187,9 +187,9 @@ As defined in ArangoDB's documentation, `body` accepts the following arguments t
 
   An array of MIME types the route supports.
 
-  Common non-mime aliases like “json” or “html” are also supported and will be expanded to the appropriate MIME type (e.g. “application/json” and “text/html”).
+  Common non-mime aliases like “json” or “html” are also supported and will be expanded to the appropriate MIME type (e.g., “application/json” and “text/html”).
 
-  If the MIME type is recognized by Foxx the request body will be parsed into the appropriate structure before being validated. Currently only JSON, `application/x-www-form-urlencoded` and multipart formats are supported in this way.
+  If the MIME type is recognized by Foxx, the request body will be parsed into the appropriate structure before being validated. Currently, only JSON, `application/x-www-form-urlencoded` and multipart formats are supported.
 
   If the MIME type indicated in the request headers does not match any of the supported MIME types, the first MIME type in the list will be used instead.
 
@@ -197,7 +197,7 @@ As defined in ArangoDB's documentation, `body` accepts the following arguments t
 
 - **description**: `string` (optional)
 
-  A human readable string that will be shown in the API documentation.
+  A human-readable string will be shown in the API documentation.
 
 ### Context Utilities
 
@@ -209,7 +209,7 @@ const {get, insert, update, remove} = module.context;
 
 Arguments used for context operations:
 
-- `get(store, docId)` - retrieves document from collection `store` by document `_docId`. 
+- `get(store, docId)` - retrieves document from collection `store` by document `_docId`.
 - `insert(store, doc)` - inserts document `doc`into collection `store`. Adding `createdOn` and `updatedOn` properties set to current `new Date().getTime()`. Returns `NEW`.
 - `update(store, docId, doc)`- updates collection `store` document `docId`with new content passed in `doc`. Updates `updatedOn` properties set to current `new Date().getTime()`. Returns `NEW`.
 - `remove(store, docId)`- removes document by id `docId` from collection `store`. Returns `OLD` with only `_key` field in it.
@@ -238,7 +238,7 @@ module.exports = {
 
 **Using context utility runScript to send a message into Telegram Channel**
 
-The example below demonstrates how to send a message to Telegram Channel. Once we have our Telegram Bot token and Channel Id, we add into scripts folder this piece of code:  
+The example below demonstrates how to send a message to Telegram Channel. Once we have our Telegram Bot token and Channel Id, we add into the scripts folder this piece of code:
 
 ```javascript
 //scripts/telegram_chat_message.js
@@ -283,7 +283,7 @@ const sessions = require('./sessions/index');
 sessions.init();
 ```
 
-By default, only /login, /logout, and /password-recovery resources are available without authentication once Session Manager is enabled. If you want to add more endpoints, you can do it in the following way:  
+By default, only /login, /logout, and /password-recovery resources are available without authentication once Session Manager is enabled. If you want to add more endpoints, you can do it in the following way:
 
 ```javascript
 const sessions = require('./sessions/index');
@@ -325,7 +325,7 @@ Testing with `hurl` running in docker:
 docker run --network host --rm -it -v "$(pwd)/.api-test":/app "orangeopensource/hurl:latest" --test --variables-file /app/.vars /app/hello.hurl
 ```
 
-Or, if you already have `hurl` installed ([Installation instructions](https://hurl.dev/docs/installation.html))
+Or, if you already have to `hurl` installed ([Installation instructions](https://hurl.dev/docs/installation.html))
 
 ```shell
 hurl --test --variables-file .api-test/.vars .api-test/*.hurl
@@ -353,11 +353,11 @@ The `{{URL}}` referres to `URL` variable from `.vars` file.
 
 
 
-### Proxying requests on Netlify 
+### Proxying requests on Netlify
 
 #### netlify.toml example configuration
 
-In case you are using Netlify, here is an example of how to proxy your URL API calls to ArangoDB Microservices.  
+If you are using Netlify, here is an example of how to proxy your URL API calls to ArangoDB Microservices.
 
 ```toml
 [build]
@@ -372,7 +372,7 @@ In case you are using Netlify, here is an example of how to proxy your URL API c
 
 [[redirects]]
     from = "/api/*"
-    to = "http://{YOUR_HOSTNAME}:8529/_db/{YOUR_ENDPOINT}/api/:splat"
+    to = "http://{YOUR_HOSTNAME}:8529/_db/{YOUR_DATABASE}/{YOUR_ENDPOINT}/:splat"
     status = 200
     force = true
     headers = {X-From = "Netlify"}
@@ -386,8 +386,9 @@ In case you are using Netlify, here is an example of how to proxy your URL API c
 
 Before deploying it on Netlify, make sure there are two variables replaced:
 
-- {YOUR_HOSTNAME} - the hostname where ArangoDb is running
-- {YOUR_ENDPOINT} - endpoint where your flex services are mounted
+- `{YOUR_HOSTNAME}` - the hostname where ArangoDb is running
+- `{YOUR_DATABASE}` - ArangoDB database name where the Foxx service is installed
+- `{YOUR_ENDPOINT}` - endpoint where your flex services are mounted
 
-Also please refer to [Exposing Foxx to the browser](https://www.arangodb.com/docs/stable/foxx-guides-browser.html) on ArangoDB documentation website.
+Also, please refer to [Exposing Foxx to the browser](https://www.arangodb.com/docs/stable/foxx-guides-browser.html) on the ArangoDB documentation website.
 
