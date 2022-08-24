@@ -2,7 +2,7 @@
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/skitsanos/foxx-builder/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/skitsanos/foxx-builder/tree/master)
 > ArangoDB allows application developers to write their data access and domain logic as microservices running directly within the database with native access to in-memory data. The **Foxx microservice framework** makes it easy to extend ArangoDB’s own REST API with custom HTTP endpoints using modern JavaScript running on the same V8 engine you know from Node.js and the Google Chrome web browser.
 >
-> Unlike traditional approaches to storing logic in the database (like stored procedures), these microservices can be written as regular structured JavaScript applications that can be easily distributed and version controlled. Depending on your project’s needs Foxx can be used to build anything from optimized REST endpoints performing complex data access to entire standalone applications running directly inside the database.
+> Unlike traditional approaches to storing logic in the database (like stored procedures), these microservices can be written as regular structured JavaScript applications that can be easily distributed and version controlled. Depending on your project’s needs, Foxx can be used to build anything from optimized REST endpoints performing complex data access to entire standalone applications running directly inside the database.
 >
 > -- [Foxx Microservices](https://www.arangodb.com/docs/stable/foxx.html)
 
@@ -53,7 +53,7 @@ src/
 --/builder/
 ---- context-extensions.js
 ---- index
---/foxx/
+--/routes/
 -- index.js
 -- setup.js
 manifest.json
@@ -62,7 +62,7 @@ package.json
 
 _/builder_ is the actual Foxx Builder service with all its utils. Unless you want to modify how `foxx-builder` works, you don't need to touch it.
 
-_/foxx_ is the folder where you will create your API service handlers with the convention described below;
+_/routes_ is the folder where you will create your API service handlers with the convention described below;
 
 _manifest.json_ is a Service Manifest file, as described on https://www.arangodb.com/docs/stable/foxx-reference-manifest.html;
 
@@ -92,7 +92,7 @@ DELETE /api/echo
 To handle this case, we will add to _foxx_ folder our handler in this way:
 
 ```
-/foxx/
+/routes/
 -- /echo/
 ---- all.js
 ```
@@ -100,7 +100,7 @@ To handle this case, we will add to _foxx_ folder our handler in this way:
 Another example - we need to add a ```/api/users``` route that on _GET_ method will reply with some data and on _POST_ will accept data sent to API and then respond.
 
 ```
-/foxx
+/routes
 -- /echo
 ---- all.js
 -- /users
@@ -127,7 +127,7 @@ Adding parameters to your URL point handling is pretty simple. Probably, you alr
 | GET /api/users/_:id_/tasks/:task | /api/users/$id/tasks/$task/post.js |
 
 ```
-/foxx/
+/routes/
 -- /users/
 ---- post.js
 ---- post.js
@@ -154,14 +154,14 @@ In the absence of a request body definition, the request object’s *body* prope
 //users/post.js
 
 module.exports = {
-    contentType: 'application/json',
-    name: 'Create new user',
-    body: {model: joi.object().required()},
-    handler: (req, res)=>
-    {
-        //your code here
-        res.send({result: 'ok'});
-    }
+  contentType: 'application/json',
+  name: 'Create new user',
+  body: {model: joi.object().required()},
+  handler: (req, res)=>
+  {
+    //your code here
+    res.send({result: 'ok'});
+  }
 };
 ```
 
@@ -221,16 +221,16 @@ Arguments used for context operations:
 //users/$id/post.js
 
 module.exports = {
-    contentType: 'application/json',
-    name: 'Get user by id',
-    handler: (req, res) =>
-    {
-        const {id} = req.pathParams;
+  contentType: 'application/json',
+  name: 'Get user by id',
+  handler: (req, res) =>
+  {
+    const {id} = req.pathParams;
 
-        const {get} = module.context;
-        const doc = get('users', id).toArray();
-        res.send({result: doc[0]});
-    }
+    const {get} = module.context;
+    const doc = get('users', id).toArray();
+    res.send({result: doc[0]});
+  }
 };
 ```
 
@@ -250,8 +250,8 @@ const {argv} = module.context;
 const token = module.context.configuration.telegramToken;
 
 request.post(`https://api.telegram.org/bot${token}/sendMessage`, {
-    json: true,
-    body: argv[0]
+  json: true,
+  body: argv[0]
 });
 
 module.exports = true;
@@ -262,13 +262,13 @@ Now we can call it, for exmaple, from our middleware:
 ```javascript
 module.context.use((req, res, next) =>
 {
-    const {runScript} = module.context;
-    runScript('telegram_chat_message', {
-        chat_id: '-CHANNEL_ID',
-        text: 'hi there from runScript'
-    });
+  const {runScript} = module.context;
+  runScript('telegram_chat_message', {
+    chat_id: '-CHANNEL_ID',
+    text: 'hi there from runScript'
+  });
 
-    next();
+  next();
 });
 ```
 
@@ -288,15 +288,17 @@ By default, only /login, /logout, and /password-recovery resources are available
 ```javascript
 const sessions = require('./sessions/index');
 sessions.allowedResources = [
-    ...sessions.allowedResources,
-    '/echo'
+  ...sessions.allowedResources,
+  '/echo'
 ];
 sessions.init();
 ```
 
 ## Developing on Docker
 
-In `Foxx-builder` v.2.x, we added `docker-compose.yml` file and a few shortcuts into `package.json` that will help you to develop your APIs and run them in docker. You can use `npm` or `yarn` in order to run things, just keep in mind that there is an order of actions to take into consideration,
+> More detailed information on this topic is available on the [Running in Docker](https://github.com/skitsanos/foxx-builder/wiki/Running-in-Docker) Wiki page
+
+In `Foxx-builder` v.2.x, we added `docker-compose.yml` file and a few shortcuts into `package.json` that will help you to develop your APIs and run them in docker. You can use `npm` or `yarn` to run 'shortcuts' instead of typing the whole command line yourself; just keep in mind that there is an order of actions to take into consideration,
 
 The flow would be like this:
 
@@ -351,9 +353,9 @@ The `{{URL}}` referres to `URL` variable from `.vars` file.
 
 ## Integrations
 
-
-
 ### Proxying requests on Netlify
+
+> More detailed information on this topic is available on the [Working with Netlify](https://github.com/skitsanos/foxx-builder/wiki/Working-with-Netlify) Wiki page
 
 #### netlify.toml example configuration
 
@@ -361,27 +363,27 @@ If you are using Netlify, here is an example of how to proxy your URL API calls 
 
 ```toml
 [build]
-    base = "."
-    publish = "./dist"
-    functions = "netlify-functions/"
+base = "."
+publish = "./dist"
+functions = "netlify-functions/"
 
 [[redirects]]
-    from = "/*"
-    to = "/index.html"
-    status = 200
+from = "/*"
+to = "/index.html"
+status = 200
 
 [[redirects]]
-    from = "/api/*"
-    to = "http://{YOUR_HOSTNAME}:8529/_db/{YOUR_DATABASE}/{YOUR_ENDPOINT}/:splat"
-    status = 200
-    force = true
-    headers = {X-From = "Netlify"}
+from = "/api/*"
+to = "http://{YOUR_HOSTNAME}:8529/_db/{YOUR_DATABASE}/{YOUR_ENDPOINT}/:splat"
+status = 200
+force = true
+headers = {X-From = "Netlify"}
 
 [[headers]]
-    for = "/*"
+for = "/*"
 
-    [headers.values]
-        x-designed-by = "skitsanos, https://github.com/skitsanos"
+[headers.values]
+x-designed-by = "skitsanos, https://github.com/skitsanos"
 ```
 
 Before deploying it on Netlify, make sure there are two variables replaced:

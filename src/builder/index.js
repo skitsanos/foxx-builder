@@ -16,7 +16,7 @@ const getServicesBase = () =>
         return v1Path;
     }
 
-    const v2Path = path.join(module.context.basePath, 'src', 'foxx');
+    const v2Path = path.join(module.context.basePath, 'src', 'routes');
     if (fs.exists(v2Path))
     {
         return v2Path;
