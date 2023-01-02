@@ -22,7 +22,7 @@ jobs:
       - run:
           name: "Install Node 16"
           command: |
-            nvm install 16
+            nvm install 18
 
       - run:
           name: "Install Foxx CLI"
@@ -37,8 +37,8 @@ jobs:
       - run:
           name: "Get Hurl"
           command: |
-            curl -LO https://github.com/Orange-OpenSource/hurl/releases/download/1.6.1/hurl_1.6.1_amd64.deb
-            sudo dpkg -i hurl_1.6.1_amd64.deb
+            curl -LO https://github.com/Orange-OpenSource/hurl/releases/download/1.8.0/hurl_1.8.0_amd64.deb
+            sudo dpkg -i hurl_1.8.0_amd64.deb
 
       - run:
           name: "Start Docker"
