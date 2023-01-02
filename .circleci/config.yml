@@ -20,7 +20,7 @@ jobs:
       - checkout
 
       - run:
-          name: "Install Node 16"
+          name: "Install Node.js"
           command: |
             nvm install 18
 
@@ -42,7 +42,7 @@ jobs:
 
       - run:
           name: "Start Docker"
-          command: | 
+          command: |
             docker-compose up
           background: true
 
@@ -76,8 +76,11 @@ jobs:
           name: "Register Foxx API services"
           command: |
             foxx server set dev http://dev:sandbox@localhost:8529
+
+      - run:
+          name: "Install API services"
+          command: |
             foxx install /api . --server dev --database dev
-            foxx list --server dev --database dev
 
       - run:
           name: "Say hello"
