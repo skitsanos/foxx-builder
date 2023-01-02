@@ -7,7 +7,7 @@ builder.init();
 //
 module.context.use((req, res, next) =>
 {
-    if (req.path.match(/\/(login|signup)/igu))
+    if (req.path === '/' || req.path.match(/\/(login|signup)/igu))
     {
         next();
     }
