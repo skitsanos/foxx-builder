@@ -17,7 +17,7 @@ module.context.use((req, res, next) =>
 
         if (!authorization)
         {
-            res.throw(404, 'Missing authorization header');
+            res.throw(403, 'Missing authorization header');
         }
 
         const token = authorization && authorization.split(' ')[1];
