@@ -2,12 +2,19 @@
 # See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
-executor:
-  node: 18
 
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
+  prepare:
+    machine:
+      image: ubuntu-2004:current
+    steps:
+      - run:
+          name: "Install Node.js"
+          command: |
+            nvm install 18
+
   api-test:
     parallelism: 4
     # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
@@ -21,11 +28,6 @@ jobs:
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
       - checkout
-
-      - run:
-          name: "Install Node.js"
-          command: |
-            nvm install 18
 
       - run:
           name: "Install Foxx CLI"
@@ -94,4 +96,7 @@ jobs:
 workflows:
   test-api-services:
     jobs:
-      - api-test
+      - prepare
+      - api-test:
+          requires:
+            - prepare
