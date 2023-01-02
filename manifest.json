@@ -12,12 +12,16 @@
     "arangodb": "^3.0.0"
   },
   "configuration": {
+    "jwtSecret": {
+      "type": "string",
+      "default": "SuperSecretWord"
+    },
     "showExecTime": {
       "default": false,
       "type": "boolean"
     },
     "sessionTtl": {
-      "default": 10,
+      "default": 3600,
       "type": "integer",
       "description": "The time in seconds since the last update until a session will be considered expired"
     },
