@@ -40,6 +40,53 @@ const extensions = {
     },
 
     //
+    // JWT helpers
+    //
+    auth: {
+        encode: payload =>
+        {
+            const {jwtSecret, sessionTtl = 60} = module.context.configuration;
+
+            if (!jwtSecret)
+            {
+                throw new Error('Encoding is failed. jwtSecret is missing in configuration');
+            }
+
+            const expiresOn = new Date().getTime() + (sessionTtl * 1000);
+
+            return crypto.jwtEncode(jwtSecret, JSON.stringify({...payload, expiresOn} || {expiresOn}), 'HS512');
+        },
+
+        decode: token =>
+        {
+            const {jwtSecret} = module.context.configuration;
+
+            if (!jwtSecret)
+            {
+                throw new Error('Decoding is failed. jwtSecret is missing in configuration');
+            }
+
+            return JSON.parse(crypto.jwtDecode(jwtSecret, token, false));
+        },
+
+        isExpired: token =>
+        {
+            const {jwtSecret} = module.context.configuration;
+
+            if (!jwtSecret)
+            {
+                throw new Error('jwtSecret is missing in configuration');
+            }
+
+            const session = JSON.parse(crypto.jwtDecode(jwtSecret, token, false));
+
+            const {expiresOn} = session;
+
+            return new Date().getTime() >= expiresOn;
+        }
+    },
+
+    //
     // Queue Jobs
     //
     jobs: {
@@ -94,7 +141,8 @@ const extensions = {
                         queue.delete(jobId);
                     }
                 }
-            } catch (e)
+            }
+            catch (e)
             {
                 //no job found
             }
@@ -144,7 +192,7 @@ const extensions = {
     utils: {
         isEmail(str)
         {
-            return str.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
+            return str.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/ig);
         },
 
         filterBuilder(q = [], doc = 'doc')
