@@ -15,12 +15,7 @@ module.exports = {
 
     handler: (req, res) =>
     {
-        if (!req.session)
-        {
-            res.throw(501, 'Session Manager is missing');
-        }
-
-        const {utils, update} = module.context;
+        const {utils, update, auth} = module.context;
 
         const {username, password} = req.body;
 
@@ -31,16 +26,12 @@ module.exports = {
                 &&
                 doc.password == ${crypto.sha384(password)}
             RETURN doc`
-            .toArray();
+        .toArray();
 
         if (!Boolean(queryResult))
         {
             res.throw(403, 'Not Authorized');
         }
-
-        req.session.uid = queryResult._key;
-
-        const meta = req.sessionStorage.save(req.session);
 
         //drop password
         delete queryResult._id;
@@ -55,7 +46,9 @@ module.exports = {
                 ...queryResult
             },
             session: {
-                token: meta._key
+                token: auth.encode({
+                    userId: queryResult._key
+                })
             }
         };
 
