@@ -60,14 +60,14 @@ const preProcessFilters = (f, doc = 'doc') =>
 };
 
 /**
- * rxQuery, experiemntal Query builder
- * @param {string} value Query string
+ * rxQuery
+ * @param {string} qs Query string
  * @param {string} doc query variable name that is used for document in 'FOR doc IN colllection'
  * @returns {*}
  */
-const rxq = (value, doc = 'doc') =>
+const rxq = (qs, doc = 'doc') =>
 {
-    const queryString = decodeURI(value);
+    const queryString = decodeURI(qs);
 
     const filters = collectFilters(queryString);
     const query = preProcessFilters(filters, doc);
