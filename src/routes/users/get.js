@@ -1,43 +1,25 @@
-const {aql, query, time} = require('@arangodb');
+const {query, time, db} = require('@arangodb');
 
 module.exports = {
     contentType: 'application/json',
     name: 'Get users',
     handler: (req, res) =>
     {
-        const {filter} = module.context.utils;
+        const {rxQuery} = module.context.utils;
 
         const {skip = 0, pageSize = 25, q} = req.queryParams;
 
+        const filter = rxQuery(q);
+
         const start = time();
 
-        let dataQuery;
-
-        try
-        {
-
-            dataQuery = JSON.parse(decodeURI(q));
-            //console.log(dataQuery)
-        } catch (e)
-        {
-            dataQuery = !q
-                ? []
-                : [
-                    {
-                        key: 'email',
-                        op: '%',
-                        value: `%${q}%`
-                    }
-                ];
-        }
-
-        const queryResult = query`      
+        const cursor = query`      
          LET skip=${Number(skip)}
          LET pageSize=${Number(pageSize)}
         
-        LET ds = (
+         LET ds = (
             FOR doc IN users
-                ${filter(dataQuery)}
+                ${filter}
                 SORT doc._key DESC
                 LIMIT skip,pageSize
             RETURN merge(
@@ -46,15 +28,18 @@ module.exports = {
                    
                 })
         )
-        
-        LET total = (FOR doc IN users 
-            ${filter(dataQuery)}
-            COLLECT WITH COUNT INTO totalFound 
-            RETURN totalFound)[0]
-        
-        RETURN {data: ds, total: total, pageSize: ${pageSize}, skip: ${skip} }          
-        `.toArray()[0];
+                
+        RETURN ds          
+        `;
 
-        res.send({result: queryResult, execTime: time() - start});
+        const total = db.users.count({ filter });
+
+        res.send({
+            result: {
+                data: cursor.toArray(),
+                total,
+                pageSize
+            }, execTime: time() - start
+        });
     }
 };

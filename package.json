@@ -1,9 +1,12 @@
 {
   "name": "foxx-api",
-  "version": "2.1.20230102",
+  "version": "2.2.20230112",
   "description": "Foxx API Services",
   "main": "src/index.js",
-  "author": "Skitsanos",
+  "author": {
+    "name": "skitsanos",
+    "url": "https://github.com/skitsanos"
+  },
   "license": "MIT",
   "private": true,
   "scripts": {
@@ -13,7 +16,7 @@
     "docker:restore": "docker exec -it arangodb-dev arangorestore --server.database dev --server.username root --server.password openSesame --input-directory /backup",
     "register-foxx-dev-server": "foxx server set dev http://dev:sandbox@localhost:8529",
     "install-foxx-dev": "foxx install /api . --server dev --database dev",
-    "replace-foxx-dev": "foxx replace /api . --server dev --database dev",
+    "replace-foxx-dev": "foxx upgrade /api . --server dev --database dev",
     "test": "docker run --network host --rm -it -v \"$(pwd)/.api-test\":/app \"orangeopensource/hurl:latest\" --test --variables-file /app/.vars /app/*.hurl"
   },
   "dependencies": {}

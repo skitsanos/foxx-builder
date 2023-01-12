@@ -22,21 +22,16 @@ module.exports = {
         const [queryResult] = query`
             for doc in users
             filter 
-                doc.email == ${username}
+                doc.username == ${username}
                 &&
                 doc.password == ${crypto.sha384(password)}
-            RETURN doc`
+            RETURN unset(doc, "_id", "_rev", "password")`
         .toArray();
 
         if (!Boolean(queryResult))
         {
             res.throw(403, 'Not Authorized');
         }
-
-        //drop password
-        delete queryResult._id;
-        delete queryResult._rev;
-        delete queryResult.password;
 
         //update lastLogin
         update('users', queryResult._key, {lastLogin: new Date().getTime()});

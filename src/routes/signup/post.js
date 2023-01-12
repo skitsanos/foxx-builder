@@ -24,7 +24,7 @@ module.exports = {
         {
             const {insert} = module.context;
             const [qr] = insert('users', {
-                email: username,
+                username,
                 password: crypto.sha384(password)
             }).toArray();
 

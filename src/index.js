@@ -3,7 +3,7 @@ builder.init();
 
 //
 // Example on how to use JWT token authorization.
-// Only /login and /signup requesats will be allowed without authentication
+// Only /login and /signup requests will be allowed without authentication
 //
 module.context.use((req, res, next) =>
 {
@@ -35,7 +35,7 @@ module.context.use((req, res, next) =>
         }
         catch (e)
         {
-            res.throw(403, e.message);
+            res.throw(400, e.message);
         }
     }
 });

@@ -9,6 +9,8 @@ const tasks = require('@arangodb/tasks');
 const crypto = require('@arangodb/crypto');
 const joi = require('joi');
 
+const rxq = require('./rxq');
+
 const extensions = {
     appRoot: path.join(__dirname, '..'),
 
@@ -268,7 +270,9 @@ const extensions = {
         {
             const qb = module.context.utils.filterBuilder(q, doc);
 
-            if (!Boolean(qb.query))
+            const {query} = qb;
+
+            if (!query)
             {
                 return aql.literal(' ');
             }
@@ -279,6 +283,10 @@ const extensions = {
             ];
 
             return aql.join(parts, ' ');
+        },
+
+        rxQuery(value){
+            return rxq(value);
         }
     }
 };
