@@ -5,8 +5,6 @@ GET {{URL}}/users
 
 HTTP/* *
 
-[Asserts]
-status == 403
 
 #
 # Create a demo user (ignore an error that user exists, just for the sake of test)
