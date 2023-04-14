@@ -1,4 +1,4 @@
-const {GraphQLString, GraphQLSchema, GraphQLObjectType} = require('graphql');
+const {GraphQLString, GraphQLSchema, GraphQLObjectType, GraphQLList} = require('graphql');
 const {query} = require('@arangodb');
 
 const AuthorType = new GraphQLObjectType({
@@ -77,6 +77,18 @@ module.exports = {
                         return result.next();
                     }
 
+                },
+
+                getAllArticles: {
+                    type: new GraphQLList(ArticleType),
+                    resolve()
+                    {
+                        const result = query`
+                          FOR article IN Articles
+                          RETURN article
+                        `;
+                        return result.toArray();
+                    }
                 }
             }
         })
