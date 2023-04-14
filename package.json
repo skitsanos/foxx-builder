@@ -14,10 +14,13 @@
     "docker:setup-db": "docker exec -it arangodb-dev arangosh --server.username root --server.password openSesame --javascript.execute-string \"db._createDatabase('dev',{},[{username: 'dev', passwd: 'sandbox', active: true}]);\"",
     "docker:backup": "docker exec -it arangodb-dev arangodump --overwrite true --server.database dev --server.username root --server.password openSesame --output-directory /backup",
     "docker:restore": "docker exec -it arangodb-dev arangorestore --server.database dev --server.username root --server.password openSesame --input-directory /backup",
-    "register-foxx-dev-server": "foxx server set dev http://dev:sandbox@localhost:8529",
-    "install-foxx-dev": "foxx install /api . --server dev --database dev",
-    "replace-foxx-dev": "foxx upgrade /api . --server dev --database dev",
+    "register-foxx-dev-server": "foxx server set docker-dev http://dev:sandbox@localhost:8529",
+    "install-foxx-dev": "foxx install /api . --server docker-dev --database dev",
+    "replace-foxx-dev": "foxx upgrade /api . --server docker-dev --database dev",
     "test": "docker run --network host --rm -it -v \"$(pwd)/.api-test\":/app \"orangeopensource/hurl:latest\" --test --variables-file /app/.vars /app/*.hurl"
   },
-  "dependencies": {}
+  "dependencies": {
+    "graphql": "15.8.0",
+    "graphql-aql-generator": "^2.1.0"
+  }
 }

@@ -12,27 +12,34 @@ const collections = [
         ]
     },
 
-    {
-        name: 'sessions'
-    }
+    'Authors',
+    'Articles'
 ];
 
 for (const col of collections)
 {
-    const {name, index} = col;
-
-    //create collection if not exists
-    if (!db._collection(name))
+    if (typeof col === 'string' && !db._collection(col))
     {
-        db._createDocumentCollection(name);
+        db._createDocumentCollection(col);
     }
-
-    //ensure index, if any
-    if (index && Array.isArray(index))
+    else
     {
-        for (const ndx of index)
+        const {name, index} = col;
+
+        //create collection if not exists
+        if (!db._collection(name))
         {
-            db._collection(name).ensureIndex(ndx);
+            db._createDocumentCollection(name);
+        }
+
+        //ensure index, if any
+        if (index && Array.isArray(index))
+        {
+            for (const ndx of index)
+            {
+                db._collection(name).ensureIndex(ndx);
+            }
         }
     }
+
 }
