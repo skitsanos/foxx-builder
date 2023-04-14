@@ -20,7 +20,6 @@
     "test": "docker run --network host --rm -it -v \"$(pwd)/.api-test\":/app \"orangeopensource/hurl:latest\" --test --variables-file /app/.vars /app/*.hurl"
   },
   "dependencies": {
-    "graphql": "15.8.0",
-    "graphql-aql-generator": "^2.1.0"
+    "graphql": "15.8.0"
   }
 }
