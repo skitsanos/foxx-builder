@@ -1,0 +1,176 @@
+#
+# Taskfile is a simple task runner that lets you build, test and run tasks
+# against your codebase. It is heavily inspired by Taskfile from the Go world.
+#
+# @author Skitsanos, https://github.com/skitsanos
+# @version 2.0.0
+#
+version: '3'
+
+vars:
+  SERVER: foxx-sandbox
+  DATABASE_NAME: foxx-sandbox
+
+  API_ENDPOINT_DEV: /api-dev
+  API_ENDPOINT_PROD: /api
+
+  HURL: hurl --variables-file ./.api-test/.vars
+  HURL_TEST_URL: --variable URL=http://localhost:8529/_db/{{.DATABASE_NAME}}{{.API_ENDPOINT_DEV}}
+
+  DOCKER_BIND_PORT: 8529
+  DOCKER_ROOT_USERNAME: root
+  DOCKER_ROOT_PASSWORD: openSesame
+  DOCKER_CREDENTIALS: --server.username {{.DOCKER_ROOT_USERNAME}} --server.password {{.DOCKER_ROOT_PASSWORD}}
+
+  RED: "\e[31m"
+  GREEN: "\e[32m"
+  GREEN_BOLD: "\e[1;32m"
+  YELLOW: "\e[33m"
+  BLUE: "\e[34m"
+  ENDCOLOR: "\e[0m"
+
+silent: true
+
+tasks:
+  #
+  # Setup docker container and create a database
+  #
+  docker-db-setup:
+    cmds:
+      - cmd: |
+          echo -e "{{.BLUE}}Creating ArangoDB server within Docker{{.ENDCOLOR}}"
+          docker ps --filter "name=arangodb-{{.DATABASE_NAME}}" | grep -w "arangodb-{{.DATABASE_NAME}}" \
+          || docker run -d --restart=always --name "arangodb-{{.DATABASE_NAME}}" -p {{.DOCKER_BIND_PORT}}:8529 -e ARANGO_ROOT_PASSWORD={{.DOCKER_ROOT_PASSWORD}} -v $(pwd)/.backup:/backup arangodb/arangodb:latest
+          
+          echo -e "{{.BLUE}}Waiting for the ArangoDB to come up{{.ENDCOLOR}}"
+          
+          wait_for_url () {
+                echo -e "{{.BLUE}}√: Testing $1{{.ENDCOLOR}}"
+                max_in_s=$2
+                delay_in_s=1
+                total_in_s=0
+                while [ $total_in_s -le "$max_in_s" ]
+                do
+                  echo -e "√: Wait ${total_in_s}s{{.ENDCOLOR}}"
+                  if (docker exec arangodb-{{.DATABASE_NAME}} arangosh {{.DOCKER_CREDENTIALS}} --javascript.execute-string "try { if (!db._databases().includes('_system')) {process.exit(1)}}catch{process.exit(1)}" 2>&1;) then
+                    return 0
+                  fi
+                  total_in_s=$(( total_in_s +  delay_in_s))
+                  sleep $delay_in_s
+                done
+                return 1
+            }
+          
+          wait_for_url 'http://localhost:{{.DOCKER_BIND_PORT}}' 60
+          
+          echo -e "{{.GREEN}}ArangoDB Server is up and running{{.ENDCOLOR}}"
+
+      - cmd: |
+          ARANGOSH_CMD_CHECK_EXISTS="if (db._databases().includes('{{.DATABASE_NAME}}')) {print('exists'); process.exit(0);} else {print('not exists'); process.exit(0);}"          
+          DB_EXISTS=$(docker exec arangodb-{{.DATABASE_NAME}} arangosh {{.DOCKER_CREDENTIALS}} --javascript.execute-string "$ARANGOSH_CMD_CHECK_EXISTS")
+          
+          if [[ "$DB_EXISTS" == "not exists" ]]; then
+            echo -e "{{.GREEN}}Database does not exist. Creating ...{{.ENDCOLOR}}"
+            ARANGOSH_CMD_CREATE_DB="db._createDatabase('{{.DATABASE_NAME}}',{},[{username: 'dev', passwd: 'sandbox', active: true}])"
+            docker exec arangodb-{{.DATABASE_NAME}} arangosh {{.DOCKER_CREDENTIALS}} --javascript.execute-string "$ARANGOSH_CMD_CREATE_DB"
+          else
+            echo -e "{{.GREEN}}Database exists{{.ENDCOLOR}}"
+          fi
+  #
+  # Create the database backup
+  #
+  docker-db-backup:
+    cmds:
+      - cmd: |
+          docker exec arangodb-{{.DATABASE_NAME}} arangodump --overwrite true --server.database {{.DATABASE_NAME}} {{.DOCKER_CREDENTIALS}} --output-directory /backup
+  #
+  # Restore the database from the backup created earlier
+  #
+  docker-db-restore:
+    cmds:
+      - cmd: |
+          docker exec arangodb-{{.DATABASE_NAME}} arangorestore --server.database {{.DATABASE_NAME}} {{.DOCKER_CREDENTIALS}} --input-directory /backup
+
+  #
+  # Run tests
+  #
+  test:
+    cmds:
+      - cmd: |
+          echo -e "\n{{.BLUE}}Running API tests{{.ENDCOLOR}}"
+      - cmd: |
+          echo -e "\n{{.BLUE}}Testing {hello}{{.ENDCOLOR}}"
+          {{.HURL}} {{.HURL_TEST_URL}} ./.api-test/hello.hurl
+
+  #
+  # Run test by name (without an extension)
+  #
+  test-one:
+    cmds:
+      - cmd: |
+          read -p "{{.BLUE}}API Test to run:{{.ENDCOLOR}}" TEST_TO_RUN
+          {{.HURL}} {{.HURL_TEST_URL}} "./.api-test/${TEST_TO_RUN}.hurl"
+          echo -e "{{.ENDCOLOR}}\n"
+
+  #
+  # Deploy a development version of API
+  #
+  deploy-docker:
+    cmds:
+      - cmd: |
+          set +e
+          is_docker_found=$(foxx server list | grep 'docker-{{.SERVER}}')
+          set -e
+          if [[ -z $is_docker_found ]]; then
+            echo "{{.BLUE}}Registering docker-{{.SERVER}} server{{.ENDCOLOR}}"
+            foxx server set docker-{{.SERVER}} http://{{.DOCKER_ROOT_USERNAME}}:{{.DOCKER_ROOT_PASSWORD}}@localhost:{{.DOCKER_BIND_PORT}}
+          else
+            echo "{{.BLUE}}Found docker-{{.SERVER}} server{{.ENDCOLOR}}"
+          fi
+          
+          set +e
+          is_found=$(foxx list --server "docker-{{.SERVER}}" --database {{.DATABASE_NAME}} | grep '{{.API_ENDPOINT_DEV}}')
+          set -e
+          if [ -z "$is_found" ]; then
+            echo -e "{{.BLUE}}Deploying on {{.API_ENDPOINT_DEV}} endpoint{{.ENDCOLOR}}"
+            foxx install "{{.API_ENDPOINT_DEV}}" . --server "docker-{{.SERVER}}" --database "{{.DATABASE_NAME}}"
+          else
+            echo -e "{{.BLUE}}Upgrading {{.API_ENDPOINT_DEV}} endpoint{{.ENDCOLOR}}"
+            foxx upgrade "{{.API_ENDPOINT_DEV}}" . --server "docker-{{.SERVER}}" --database "{{.DATABASE_NAME}}"
+          fi      
+
+  #
+  # Deploy a development version of API
+  #
+  deploy-dev:
+    cmds:
+      - cmd: |
+          set +e
+          is_found=$(foxx list --server "{{.SERVER}}" --database {{.DATABASE_NAME}} | grep '{{.API_ENDPOINT_DEV}}')
+          set -e
+          if [ -z "$is_found" ]; then
+            echo -e "{{.BLUE}}Deploying on {{.API_ENDPOINT_DEV}} endpoint{{.ENDCOLOR}}"
+            foxx install "{{.API_ENDPOINT_DEV}}" . --server "{{.SERVER}}" --database "{{.DATABASE_NAME}}"
+          else
+            echo -e "{{.BLUE}}Upgrading {{.API_ENDPOINT_DEV}} endpoint{{.ENDCOLOR}}"
+            foxx upgrade "{{.API_ENDPOINT_DEV}}" . --server "{{.SERVER}}" --database "{{.DATABASE_NAME}}"
+          fi
+
+  #
+  # Deploy a production version of API
+  #
+  deploy-prod:
+    prompt: You are deploying to production environment. Please confirm.
+    cmds:
+      - task: test
+      - cmd: |
+          set +e
+          is_found=$(foxx list --server "{{.SERVER}}" --database {{.DATABASE_NAME}} | grep '{{.API_ENDPOINT_PROD}}')
+          set -e
+          if [ -z "$is_found" ]; then
+            echo -e "{{.BLUE}}Deploying on {{.API_ENDPOINT_PROD}} endpoint{{.ENDCOLOR}}"
+            foxx install "{{.API_ENDPOINT_PROD}}" . --server "{{.SERVER}}" --database "{{.DATABASE_NAME}}"
+          else
+            echo -e "{{.BLUE}}Upgrading {{.API_ENDPOINT_PROD}} endpoint{{.ENDCOLOR}}"
+            foxx upgrade "{{.API_ENDPOINT_PROD}}" . --server "{{.SERVER}}" --database "{{.DATABASE_NAME}}"
+          fi
