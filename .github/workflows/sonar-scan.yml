@@ -10,7 +10,7 @@ on:
 
 jobs:
   scan:
-    name: Build
+    name: Sonar Scan
     runs-on: ubuntu-latest
     permissions: read-all
     steps:
