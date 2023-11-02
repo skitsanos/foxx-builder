@@ -10,10 +10,6 @@ const collections = [
                 fields: ['username']
             }
         ]
-    },
-
-    {
-        name: 'sessions'
     }
 ];
 
