@@ -1,37 +1,53 @@
 name: Sonar Scanner
-
 on:
   workflow_dispatch:
-
   push:
     branches:
-      - master
-      - develop
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   scan:
-    name: Sonar Scan
     runs-on: ubuntu-latest
-    permissions: read-all
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - uses: sonarsource/sonarqube-scan-action@master
+          # Disabling shallow clones is recommended for improving the relevancy of reporting
+          fetch-depth: 0
+      - name: Generate Project Meta
+        id: generate-meta
+        run: |
+          REPO_URL=https://github.com/${GITHUB_REPOSITORY}/tree/${GITHUB_REF##*/}
+          PROJECT_NAME="${GITHUB_REPOSITORY}"
+          BRANCH_NAME="${GITHUB_REF##*/}"
+          PROJECT_KEY=$(echo "${GITHUB_REPOSITORY}_$BRANCH_NAME" | sed 's/\//_/g')
+          
+          echo "repo_url=$REPO_URL" >> "$GITHUB_OUTPUT"
+          echo "project_name=$PROJECT_NAME" >> "$GITHUB_OUTPUT"
+          echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+          echo "project_key=$PROJECT_KEY" >> "$GITHUB_OUTPUT"
+
+      - name: Info
+        run: |
+          echo "Testing ${{steps.generate-meta.outputs.project_key}}"
+      - name: Cache SonarQube scanner
+        uses: actions/cache@v3
+        with:
+          path: ./.dev/tools/sonar/.cache
+          key: sonarqube-cache-${{ hashFiles('package.json') }}
+          restore-keys: sonarqube-cache-
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
         with:
           args: >
-            -D sonar.verbose=true
-            -D sonar.projectKey=skitsanos_foxx-builder_main
-            -D sonar.projectName="skitsanos/foxx-builder"
-            -D sonar.qualitygate=Skitsanos
-            -D sonar.sources=src
-            -D sonar.sourceEncoding=UTF-8
+            -Dsonar.verbose=false
+            -Dsonar.projectKey=${{steps.generate-meta.outputs.project_key}}
+            -Dsonar.projectName=${{steps.generate-meta.outputs.project_name}}-${{steps.generate-meta.outputs.branch_name}}
+            -Dsonar.qualitygate=Skitsanos
+            -Dsonar.qualitygate.wait=true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-      # If you wish to fail your job when the Quality Gate is red, uncomment the
-      # following lines. This would typically be used to fail a deployment.
-      # - uses: sonarsource/sonarqube-quality-gate-action@master
-      #   timeout-minutes: 5
-      #   env:
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
