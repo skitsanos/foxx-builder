@@ -23,7 +23,6 @@ jobs:
             -D sonar.verbose=true
             -D sonar.projectKey=skitsanos_foxx-builder_main
             -D sonar.projectName="skitsanos/foxx-builder"
-            -D sonar.qualitygate.wait=true
             -D sonar.qualitygate=Skitsanos
             -D sonar.sources=src
             -D sonar.sourceEncoding=UTF-8
