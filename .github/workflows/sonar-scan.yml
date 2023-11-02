@@ -1,6 +1,8 @@
 name: Sonar Scanner
 
 on:
+  workflow_dispatch:
+
   push:
     branches:
       - master
@@ -18,7 +20,11 @@ jobs:
       - uses: sonarsource/sonarqube-scan-action@master
         with:
           args: >
-            -Dsonar.projectKey=skitsanos_foxx-builder_AYuON_1zk3UYif6VAOSq
+            -D sonar.verbose=true
+            -D sonar.projectKey=skitsanos_foxx-builder_main
+            -D sonar.projectName="skitsanos/foxx-builder"
+            -D sonar.sources=src
+            -D sonar.sourceEncoding=UTF-8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
