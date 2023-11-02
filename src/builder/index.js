@@ -5,8 +5,11 @@
  * @author Skitsanos, info@skitsanos.com, https://github.com/skitsanos
  */
 const createRouter = require('@arangodb/foxx/router');
+const createGraphQLRouter = require('@arangodb/foxx/graphql');
+const graphql = require('graphql');
 const fs = require('fs');
 const path = require('path');
+const {graphqlSync} = require('graphql');
 
 const getServicesBase = () =>
 {
@@ -26,9 +29,10 @@ const getServicesBase = () =>
     process.exit(1);
 };
 
+const supportedMethods = ['all', 'get', 'post', 'put', 'delete', 'patch', 'head', 'options', 'trace', 'graphql'];
+
 const index = {
     foxxServicesLocation: getServicesBase(),
-    supportedMethods: ['all', 'get', 'post', 'put', 'delete', 'patch', 'head'],
 
     assignParams(type, params, endpoint)
     {
@@ -91,47 +95,87 @@ const index = {
                     if (fs.isFile(fullPath))
                     {
                         const method = path.basename(fullPath, '.js');
-                        if (this.supportedMethods.includes(method))
+
+                        if (supportedMethods.includes(method))
                         {
                             const temp = fullPath.split(this.foxxServicesLocation)[1].split(`${method}.js`)[0];
                             const pathToHandle = temp.substring(0, temp.length - 1).replace(/\\/gi, '/');
-                            const m = require(fullPath);
+                            const routeHandlerModule = require(fullPath);
 
                             //parse path params
                             const pathParsed = pathToHandle.replace(/\$/gi, ':');
 
-                            //create endpoint handler
+                            //
+                            // create endpoint handler for the GraphQL
+                            //
+                            if (method === 'graphql')
+                            {
+                                if (!('schema' in routeHandlerModule))
+                                {
+                                    const err = `GraphQL schema is not defined for ${pathParsed}`;
+                                    console.error(err);
+                                    throw new Error(err);
+                                }
+
+                                module.context.use(pathParsed, createGraphQLRouter({
+                                    graphql,
+                                    formatError: (error) =>
+                                    {
+                                        return {
+                                            meta: {
+                                                platform: 'foxx-builder'
+                                            },
+                                            message: error.message,
+                                            locations: error.locations,
+                                            path: error.path
+                                        };
+                                    },
+                                    executor: ({context, document, variables}) =>
+                                        graphqlSync({
+                                            schema: routeHandlerModule.schema,
+                                            contextValue: context,
+                                            source: document,
+                                            variableValues: variables
+                                        }),
+                                    ...routeHandlerModule
+                                }));
+                                return;
+                            }
+
+                            //
+                            // create endpoint handler for the HTTP verbs
+                            //
                             const r = createRouter();
-                            const endpoint = r[method](pathParsed, m.handler);
+                            const endpoint = r[method](pathParsed, routeHandlerModule.handler);
 
                             //check if params were defined
-                            if (Object.prototype.hasOwnProperty.call(m, 'params'))
+                            if (Object.prototype.hasOwnProperty.call(routeHandlerModule, 'params'))
                             {
                                 //check for path params
-                                if (Object.prototype.hasOwnProperty.call(m.params, 'path'))
+                                if (Object.prototype.hasOwnProperty.call(routeHandlerModule.params, 'path'))
                                 {
-                                    this.assignParams('path', m.params.path, endpoint);
+                                    this.assignParams('path', routeHandlerModule.params.path, endpoint);
                                 }
 
                                 //check for query params
-                                if (Object.prototype.hasOwnProperty.call(m.params, 'query'))
+                                if (Object.prototype.hasOwnProperty.call(routeHandlerModule.params, 'query'))
                                 {
-                                    this.assignParams('query', m.params.query, endpoint);
+                                    this.assignParams('query', routeHandlerModule.params.query, endpoint);
                                 }
                             }
 
                             //check headers
-                            if (Object.prototype.hasOwnProperty.call(m, 'headers'))
+                            if (Object.prototype.hasOwnProperty.call(routeHandlerModule, 'headers'))
                             {
-                                this.assignParams('headers', m.headers, endpoint);
+                                this.assignParams('headers', routeHandlerModule.headers, endpoint);
                             }
 
                             //check for body defs
-                            if (Object.prototype.hasOwnProperty.call(m, 'body'))
+                            if (Object.prototype.hasOwnProperty.call(routeHandlerModule, 'body'))
                             {
-                                if (Boolean(m.body))
+                                if (Boolean(routeHandlerModule.body))
                                 {
-                                    const {model, mimes, description} = m.body;
+                                    const {model, mimes, description} = routeHandlerModule.body;
                                     endpoint.body(model, mimes, description);
                                 }
                                 else
@@ -140,9 +184,9 @@ const index = {
                                 }
                             }
 
-                            if (Object.prototype.hasOwnProperty.call(m, 'error') && Array.isArray(m.error))
+                            if (Object.prototype.hasOwnProperty.call(routeHandlerModule, 'error') && Array.isArray(routeHandlerModule.error))
                             {
-                                for (const rule of m.error)
+                                for (const rule of routeHandlerModule.error)
                                 {
                                     const [status, message] = Object.entries(rule)[0];
                                     endpoint.error(Number(status), message);

@@ -5,40 +5,40 @@ builder.init();
 // Example on how to use JWT token authorization.
 // Only /login and /signup requests will be allowed without authentication
 //
-module.context.use((req, res, next) =>
-{
-    if (req.path === '/' || req.path.match(/\/(login|signup)/igu))
-    {
-        next();
-    }
-    else
-    {
-        const {authorization} = req.headers;
-
-        if (!authorization)
-        {
-            res.throw(403, 'Missing authorization header');
-        }
-
-        const token = authorization && authorization.split(' ')[1];
-
-        try
-        {
-            const {auth} = module.context;
-
-            if (auth.isExpired(token))
-            {
-                res.throw(403, 'The token is expired');
-            }
-
-            next();
-        }
-        catch (e)
-        {
-            res.throw(400, e.message);
-        }
-    }
-});
+// module.context.use((req, res, next) =>
+// {
+//     if (req.path === '/' || req.path.match(/\/(login|signup)/igu))
+//     {
+//         next();
+//     }
+//     else
+//     {
+//         const {authorization} = req.headers;
+//
+//         if (!authorization)
+//         {
+//             res.throw(403, 'Missing authorization header');
+//         }
+//
+//         const token = authorization && authorization.split(' ')[1];
+//
+//         try
+//         {
+//             const {auth} = module.context;
+//
+//             if (auth.isExpired(token))
+//             {
+//                 res.throw(403, 'The token is expired');
+//             }
+//
+//             next();
+//         }
+//         catch (e)
+//         {
+//             res.throw(400, e.message);
+//         }
+//     }
+// });
 
 /*module.context.use((req, res, next) =>
  {
