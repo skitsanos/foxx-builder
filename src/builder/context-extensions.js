@@ -1,4 +1,8 @@
-const {db, query, aql} = require('@arangodb');
+const {
+    db,
+    query,
+    aql
+} = require('@arangodb');
 const path = require('path');
 
 const queues = require('@arangodb/foxx/queues');
@@ -9,45 +13,69 @@ const tasks = require('@arangodb/tasks');
 const crypto = require('@arangodb/crypto');
 const joi = require('joi');
 
+const filterBuilder = require('./filter-builder');
+
 const rxq = require('./rxq');
 
+/**
+ *
+ * @type {ModuleContext}
+ */
 const extensions = {
     appRoot: path.join(__dirname, '..'),
 
-    get: (store, docId) => query`return unset(document(${db._collection(store)}, ${docId}), "_id", "_rev")`,
+    /**
+     * Get document from collection
+     * @param {String} collection - name of the collection
+     * @param {String} docId - document id
+     * @returns {*}
+     */
+    get: (collection, docId) => query`return unset(document(${db._collection(collection)}, ${docId}), "_id", "_rev")`,
 
-    insert: (store, doc) => query`INSERT ${{
+    insert: (collection, doc) => query`INSERT ${{
         ...doc,
         createdOn: new Date().getTime(),
         updatedOn: new Date().getTime()
-    }} IN ${db._collection(store)} RETURN UNSET(NEW, "_id", "_rev")`,
+    }} IN ${db._collection(collection)} RETURN UNSET(NEW, "_id", "_rev")`,
 
-    update: (store, docId, doc) => query`UPDATE ${docId} WITH ${{
+    update: (collection, docId, doc) => query`UPDATE ${docId} WITH ${{
         ...doc,
         updatedOn: new Date().getTime()
-    }} IN ${db._collection(store)} RETURN KEEP(NEW, "_key")`,
+    }} IN ${db._collection(collection)} RETURN KEEP(NEW, "_key")`,
 
-    remove: (store, docId) =>
+    remove: (collection, docId) =>
     {
         if (!docId)
         {
             return null;
         }
 
-        const [exists] = module.context.get(store, docId).toArray();
+        const [exists] = module.context.get(collection, docId).toArray();
 
-        return Boolean(exists)
-            ? query`REMOVE ${docId} IN ${db._collection(store)} RETURN KEEP(OLD, "_key")`
-            : {toArray: () => []};
+        return exists
+               ? query`REMOVE ${docId} IN ${db._collection(collection)} RETURN KEEP(OLD, "_key")`
+               : {toArray: () => []};
+    },
+
+    queries: {
+        filterBuilder
     },
 
     //
     // JWT helpers
     //
     auth: {
+        /**
+         * Encodes payload into JWT token
+         * @param {Object} payload - payload to encode
+         * @returns {String} - JWT token
+         */
         encode: payload =>
         {
-            const {jwtSecret, sessionTtl = 60} = module.context.configuration;
+            const {
+                jwtSecret,
+                sessionTtl = 60
+            } = module.context.configuration;
 
             if (!jwtSecret)
             {
@@ -56,9 +84,19 @@ const extensions = {
 
             const expiresOn = new Date().getTime() + (sessionTtl * 1000);
 
-            return crypto.jwtEncode(jwtSecret, JSON.stringify({...payload, expiresOn} || {expiresOn}), 'HS512');
+            const jsonPayload = JSON.stringify({
+                ...payload || {},
+                expiresOn
+            });
+
+            return crypto.jwtEncode(jwtSecret, jsonPayload, 'HS512');
         },
 
+        /**
+         * Decodes JWT token
+         * @param {String} token - JWT token
+         * @returns {Object} - decoded payload
+         */
         decode: token =>
         {
             const {jwtSecret} = module.context.configuration;
@@ -93,7 +131,7 @@ const extensions = {
     //
     jobs: {
         /**
-         *
+         * Runs job
          * @param scriptName {String} name of the script listed in manifest file
          * @param data {Object}
          * @param opts {Object}
@@ -103,20 +141,24 @@ const extensions = {
         {
             return queue.push(
                 {
-                    mount: module.context.mount || '/api', // i.e. this current service
-                    name: scriptName // script name in the service manifest
+                    mount: module.context.mount || '/api',
+                    // script name in the service manifest
+                    name: scriptName
                 },
                 data, // arguments
                 {
-                    success: (result, jobData, job) =>
+                    success: (_result, _jobData, job) =>
                     {
                         const {db: database} = require('@arangodb');
                         const updateQuery = global.aqlQuery`REMOVE ${job._key} in _jobs`;
-                        updateQuery.options = {ttl: 5, maxRuntime: 5};
+                        updateQuery.options = {
+                            ttl: 5,
+                            maxRuntime: 5
+                        };
 
                         database._query(updateQuery);
                     },
-                    failure: (result, jobData, job) =>
+                    failure: (result, _jobData, job) =>
                     {
                         console.log(job, result);
                     },
@@ -152,7 +194,7 @@ const extensions = {
     },
 
     /**
-     * Runs single or repeated task
+     * Runs a single or repeated task
      * @param name
      * @param handler
      * @param params
@@ -174,7 +216,10 @@ const extensions = {
             },
             command: p =>
             {
-                const {script, context} = p;
+                const {
+                    script,
+                    context
+                } = p;
 
                 delete p.script;
 
@@ -194,7 +239,9 @@ const extensions = {
     utils: {
         isEmail(str)
         {
-            return str.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/ig);
+            const schemaEmail = joi.string().email().required();
+            const validation = schemaEmail.validate(str);
+            return !(validation.error);
         },
 
         filterBuilder(q = [], doc = 'doc')
@@ -243,7 +290,6 @@ const extensions = {
                         break;
 
                     case '?':
-                        //parts.push(aql.literal('LIKE('));
                         parts.push(aql.literal(`LIKE(${key},`));
                         const opValue = `%${el.value}%`;
                         parts.push(aql`${opValue}, true)`);
@@ -255,9 +301,7 @@ const extensions = {
                         break;
                 }
 
-                //parts.push(output);
-
-                if (i < q.length - 1 && !Boolean(el.logic))
+                if (i < q.length - 1 && !el.logic)
                 {
                     parts.push(aql`&&`);
                 }
@@ -270,9 +314,9 @@ const extensions = {
         {
             const qb = module.context.utils.filterBuilder(q, doc);
 
-            const {query} = qb;
+            const {query: filterQuery} = qb;
 
-            if (!query)
+            if (!filterQuery)
             {
                 return aql.literal(' ');
             }
@@ -285,8 +329,9 @@ const extensions = {
             return aql.join(parts, ' ');
         },
 
-        rxQuery(value){
-            return rxq(value);
+        rxQuery(value, doc = 'doc')
+        {
+            return rxq(value, doc);
         }
     }
 };

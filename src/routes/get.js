@@ -5,13 +5,17 @@
  * @version 1.0.20201019
  */
 
-
+/**
+ *
+ * @type {EndpointHandler}
+ */
 module.exports = {
     contentType: 'application/json',
     name: 'home',
     handler: (req, res) =>
     {
         const {manifest} = module.context;
+
         res.send({
             info: {
                 name: manifest.name,
