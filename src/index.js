@@ -5,58 +5,45 @@ builder.init();
 // Example on how to use JWT token authorization.
 // Only /login and /signup requests will be allowed without authentication
 //
-// module.context.use((req, res, next) =>
-// {
-//     if (req.path === '/' || req.path.match(/\/(login|signup)/igu))
-//     {
-//         next();
-//     }
-//     else
-//     {
-//         const {authorization} = req.headers;
-//
-//         if (!authorization)
-//         {
-//             res.throw(403, 'Missing authorization header');
-//         }
-//
-//         const token = authorization && authorization.split(' ')[1];
-//
-//         try
-//         {
-//             const {auth} = module.context;
-//
-//             if (auth.isExpired(token))
-//             {
-//                 res.throw(403, 'The token is expired');
-//             }
-//
-//             next();
-//         }
-//         catch (e)
-//         {
-//             res.throw(400, e.message);
-//         }
-//     }
-// });
+module.context.use((req, res, next) =>
+{
+    if (req.path === '/' || req.path.match(/\/(login|signup|users)/igu))
+    {
+        next();
+    }
+    else
+    {
+        const {auth: authorization} = req;
 
-/*module.context.use((req, res, next) =>
- {
- const {runTask} = module.context;
- runTask(
- 'Apilitics via Amplitude',
- 'amplitude',
- {
- userId: Boolean(req.session && req.session.uid) ? req.session.uid : '(anonymous)',
- authorized: Boolean(req.session && req.session.uid),
- path: req.path,
- headers: req.headers,
- events: [
- {
- type: 'prod.site.pageview'
- }
- ]
- });
+        const {
+            auth,
+            get
+        } = module.context;
 
- next();
- });*/
+        if (!authorization)
+        {
+            res.throw(403, 'Missing authorization header');
+        }
+
+        const {bearer: token} = authorization;
+        if (!token)
+        {
+            res.throw(403, 'Missing authorization token');
+        }
+
+        if (auth.isExpired(token))
+        {
+            res.throw(403, 'The token is expired');
+        }
+
+        const tokenDetails = auth.decode(token);
+        const foundUser = get('users', tokenDetails.userId).toArray()[0];
+
+        if (!foundUser)
+        {
+            res.throw(403, 'Authorization terminated.');
+        }
+
+        next();
+    }
+});
