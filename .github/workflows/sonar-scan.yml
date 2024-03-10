@@ -35,7 +35,7 @@ jobs:
         run: |
           echo "Testing ${{steps.generate-meta.outputs.project_key}}"
       - name: Cache SonarQube scanner
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ./.dev/tools/sonar/.cache
           key: sonarqube-cache-${{ hashFiles('package.json') }}
