@@ -3,7 +3,7 @@ version: 2.1
 
 # Use orbs for simplified configuration
 orbs:
-  node: circleci/node@5.1.0
+  node: circleci/node@7.1.0
 
 # Define reusable commands
 commands:
