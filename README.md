@@ -1,396 +1,281 @@
-# foxx-builder
+# 🚀 Foxx Builder
+
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/skitsanos/foxx-builder/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/skitsanos/foxx-builder/tree/master)
-> ArangoDB allows application developers to write their data access and domain logic as microservices running directly within the database with native access to in-memory data. The **Foxx microservice framework** makes it easy to extend ArangoDB’s own REST API with custom HTTP endpoints using modern JavaScript running on the same V8 engine you know from Node.js and the Google Chrome web browser.
+
+Build powerful database-driven microservices with **foxx-builder** – the modern, convention-based framework for ArangoDB Foxx.
+
+## What is Foxx?
+
+> ArangoDB's Foxx microservice framework lets you build APIs that run directly within the database, with native access to your data. Using JavaScript (V8 engine), you can create endpoints that eliminate the usual database-to-application round trips, dramatically improving performance.
 >
-> Unlike traditional approaches to storing logic in the database (like stored procedures), these microservices can be written as regular structured JavaScript applications that can be easily distributed and version controlled. Depending on your project’s needs, Foxx can be used to build anything from optimized REST endpoints performing complex data access to entire standalone applications running directly inside the database.
->
-> -- [Foxx Microservices](https://www.arangodb.com/docs/stable/foxx.html)
+> Unlike stored procedures, Foxx services are structured JavaScript applications that are easy to version control and distribute. Build anything from optimized data access endpoints to complete applications running inside your database.
 
-The idea behind this template is to help developers create and run ArangoDB Foxx Microservices with minimal effort and at no time by keeping each API endpoint method handler in its dedicated module.
+## Why Foxx Builder?
 
-So, instead of having complex logic describing complete API endpoint functionality, we split it into smaller blocks that are easier to maintain and provide a better overview of the whole application.
+Foxx Builder streamlines Foxx development through **convention over configuration**. Organize your API with a clear, intuitive folder structure that directly maps to your URL paths.
 
-### Getting started
+**Instead of** complex monolithic handlers, **enjoy**:
+- 📁 Endpoint organization that mirrors your URL structure
+- 🧩 Modular API design with dedicated handler files
+- 🔍 Instant visual understanding of your API's capabilities
+- ⚡ Rapid development through convention-based routing
 
-1. `git clone` the whole thing, and you are good to go.
+## Quick Start
 
-```sh
+### Install and Deploy
+
+```bash
+# Clone the repository
 git clone https://github.com/skitsanos/foxx-builder.git
+
+# Deploy using built-in tool (requires Node.js 18+)
+npm run deploy -- -H http://localhost:8529 -d dev -u dev -p sandbox
 ```
 
-In the `package.json` in the *scripts* section, you will find a number of shortcuts that will help you register your server with `foxx-cli`, and install or replace the Foxx microservice on your server.
+Want to use foxx-cli? That works too:
 
-2. Install `foxx-cli` if you don't have it yet [https://github.com/arangodb/foxx-cli#install](https://github.com/arangodb/foxx-cli#install)
+```bash
+# Register your ArangoDB server
+foxx server set dev http://dev:sandbox@localhost:8529
 
-3. Register your ArangoDB server so you can install and replace your Foxx Microservices, for example:
-
-   ```sh
-   foxx server set dev http://dev:sandbox@localhost:8529
-   ```
-
-By executing this command, we assume that you already created a user _dev_ with password _sandbox_ on _localhost_ server, and we register this server to foxx-cli as _dev_.
-
-If you define servers using the `server` commands, a `.foxxrc` file will be created in your `$HOME` directory, which is typically one of the following paths:
-
-- `/home/$USER` on Linux
-- `/Users/$USER` on macOS
-- `C:\Users\$USER` on Windows
-
-This file contains sections for each server that may contain server credentials should you decide to save them.
-
-4. The example below shows how you can install this Foxx Microservice on the _dev_ server to the _dev_ database and mount it as _/api_ endpoint.
-
-   ```sh
-   foxx install /api . --server dev --database dev
-   ```
-
-### Folder Structure
-
-There are very few bits required to make your Foxx services up and running. The folder structure is defined in a way that will help you to have better control over API application architecture with minimal coding effort from your side.
-
-```
-src/
---/builder/
----- context-extensions.js
----- index
---/routes/
--- index.js
--- setup.js
-manifest.json
-package.json
+# Install the service
+foxx install /api . --server dev --database dev
 ```
 
-_/builder_ is the actual Foxx Builder service with all its utils. Unless you want to modify how `foxx-builder` works, you don't need to touch it.
+For more deployment options, see [Deployment Documentation](./docs/deployment.md).
 
-_/routes_ is the folder where you will create your API service handlers with the convention described below;
+## API Structure by Convention
 
-_manifest.json_ is a Service Manifest file, as described on https://www.arangodb.com/docs/stable/foxx-reference-manifest.html;
-
-setup.js - Setup script, as described on https://www.arangodb.com/docs/stable/foxx-guides-scripts.html#setup-script;
-
-Inside the _/foxx_ folder will be placed API endpoint path handlers, where every part of the path will be correspondent to a dedicated folder that contains an HTTP method handler.
-
-Out of the box, _foxx builder_ supports the following HTTP methods:
-- GET
-- POST
-- PUT
-- DELETE
-
-### Creating your first API endpoint
-
-For the sake of convention, let's assume that all our foxx services will be mounted on ```/api``` route.
-
-For example, we need to create a handler that will accept _all_ HTTP methods and respond to requests like this:
+Create intuitive APIs by mapping your file system to your URL structure:
 
 ```
-GET /api/echo
-POST /api/echo
-PUT /api/echo
-DELETE /api/echo
+GET  /api/echo                   → /routes/echo/get.js
+POST /api/users                  → /routes/users/post.js
+GET  /api/users/:id/tasks        → /routes/users/$id/tasks/get.js
+GET  /api/users/:id/tasks/:task  → /routes/users/$id/tasks/$task/get.js
 ```
 
-To handle this case, we will add to _foxx_ folder our handler in this way:
+### Code Example
 
-```
-/routes/
--- /echo/
----- all.js
-```
-
-Another example - we need to add a ```/api/users``` route that on _GET_ method will reply with some data and on _POST_ will accept data sent to API and then respond.
-
-```
-/routes
--- /echo
----- all.js
--- /users
----- post.js
----- post.js
-```
-
-In other words, file path your API route method handler mirrors your URL path
-
-| **API endpoint**                 | **Handler**                       |
-| -------------------------------- | --------------------------------- |
-| GET /api/echo                    | /api/echo/post.js                  |
-| GET /api/users                   | /api/users/post.js                 |
-| POST /api/users                  | /api/users/post.js                |
-| GET /api/users/_:id_/tasks       | /api/users/$id/tasks/post.js       |
-| GET /api/users/_:id_/tasks/:task | /api/users/$id/tasks/$task/post.js |
-
-### Parametrized path
-
-Adding parameters to your URL point handling is pretty simple. Probably, you already noticed from the table above when we require some parameter; we just add its name with $ in front of it in our folder name. Just make sure you don't have duplicating parameters.
-
-| **API endpoint**                 | **Handler**                       |
-| -------------------------------- | --------------------------------- |
-| GET /api/users/_:id_/tasks/:task | /api/users/$id/tasks/$task/post.js |
-
-```
-/routes/
--- /users/
----- post.js
----- post.js
----- /$id/
------- post.js
-------/tasks/
--------- post.js
--------- post.js
--------- /$task/
----------- post.js
-```
-
-More on path parameters you can be read on [https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation](https://www.arangodb.com/docs/stable/foxx-getting-started.html#parameter-validation).
-
-### Validating payload sent to your endpoint
-
-For HTTP methods like POST and PUT, you need to add to your handler additional property called `body`. If it is set to `null`, the request payload will be rejected. If you want to enable request body/payload validation, you need to set `body` property with at least adding schema to it.
-
-The `body` defines the request body recognized by the endpoint. There can only be one request body definition per endpoint. The definition will also be shown in the route details in ArangoDB's API documentation.
-
-In the absence of a request body definition, the request object’s *body* property will be initialized to the unprocessed *rawBody* buffer.
+Here's a simple endpoint handler:
 
 ```javascript
-//users/post.js
-
+// routes/users/$id/get.js
 module.exports = {
   contentType: 'application/json',
-  name: 'Create new user',
-  body: {model: joi.object().required()},
-  handler: (req, res)=>
-  {
-    //your code here
-    res.send({result: 'ok'});
+  name: 'Get user by ID',
+  handler: (req, res) => {
+    const { id } = req.pathParams;
+    const { get } = module.context;
+    
+    const user = get('users', id).toArray()[0];
+    res.json({ user });
   }
 };
 ```
 
-In the absence of a request body definition, the request object’s *body* property will be initialized to the unprocessed *rawBody* buffer.
+## Features
 
-As defined in ArangoDB's documentation, `body` accepts the following arguments that `foxx-builder` takes as object properties.
+### 🔐 JWT Authentication
 
-- **model**: `Model | Schema | null` (optional)
+Built-in JWT authentication system with:
 
-  A model or joi schema describing the request body. A validation failure will result in an automatic 400 (Bad Request) error response.
+- Token-based security
+- Configurable expiration policies
+- Refresh token support
+- Path exemptions with wildcard support
 
-  If the value is a model with a `fromClient` method, that method will be applied to the parsed request body.
+### 👤 Enhanced User Management
 
-  If the value is a schema or a model with a schema, the schema will be used to validate the request body and the `value` property of the validation result of the parsed request body will be used instead of the parsed request body itself.
+Comprehensive user management with:
 
-  If the value is a model or a schema and the MIME type has been omitted, the MIME type will default to JSON instead.
+- Role-based access control (RBAC) with granular permissions
+- User profiles, registration and account management
+- Flexible user preferences system for personalization
+- Detailed activity tracking and audit logs
+- User statistics and preference management
 
-  If the value is explicitly set to `null`, no request body will be expected.
+[Learn more about Enhanced User Management](./docs/features/enhanced-user-management.md)
 
-  If the value is an array containing exactly one model or schema, the request body will be treated as an array of items matching that model or schema.
+### 🛡️ Rate Limiting
 
-- **mimes**: `Array<string>` (optional)
+Protect your API from abuse with configurable rate limiting:
 
-  An array of MIME types the route supports.
+- Limit requests per client based on IP or user ID
+- Configurable rate thresholds
+- Path exemptions with wildcard support
+- Role-based exemptions
+- Automatic cleanup of rate limit data
 
-  Common non-mime aliases like “json” or “html” are also supported and will be expanded to the appropriate MIME type (e.g., “application/json” and “text/html”).
+[Learn more about Rate Limiting](./docs/features/rate-limiting.md)
 
-  If the MIME type is recognized by Foxx, the request body will be parsed into the appropriate structure before being validated. Currently, only JSON, `application/x-www-form-urlencoded` and multipart formats are supported.
+### 🔍 Health Checks
 
-  If the MIME type indicated in the request headers does not match any of the supported MIME types, the first MIME type in the list will be used instead.
+Comprehensive system health monitoring:
 
-  Failure to parse the request body will result in an automatic 400 (Bad Request) error response.
+- Lightweight status endpoint for simple liveness probes
+- Detailed health check with component-level diagnostics
+- Memory, database, tasks, and auth system monitoring
+- Integration with container orchestration and monitoring systems
 
-- **description**: `string` (optional)
+[Learn more about Health Checks](./docs/features/health-checks.md)
 
-  A human-readable string will be shown in the API documentation.
+### 🕓 Scheduled Tasks
 
-### Context Utilities
+Automate routine operations with a flexible task scheduler:
 
-`foxx-builder` comes with few Context Utilities that you can use to perform basic CRUD operations. Those are `get`, `insert`, `update` and `remove`.
+- Create one-time or recurring tasks with cron-like scheduling
+- Manage tasks through a comprehensive admin API
+- Track execution history and task performance
+- Built-in task handlers for common operations
+
+[Learn more about Scheduled Tasks](./docs/features/scheduled-tasks.md)
 
 ```javascript
-const {get, insert, update, remove} = module.context;
-```
-
-Arguments used for context operations:
-
-- `get(store, docId)` - retrieves document from collection `store` by document `_docId`.
-- `insert(store, doc)` - inserts document `doc`into collection `store`. Adding `createdOn` and `updatedOn` properties set to current `new Date().getTime()`. Returns `NEW`.
-- `update(store, docId, doc)`- updates collection `store` document `docId`with new content passed in `doc`. Updates `updatedOn` properties set to current `new Date().getTime()`. Returns `NEW`.
-- `remove(store, docId)`- removes document by id `docId` from collection `store`. Returns `OLD` with only `_key` field in it.
-- `runScript(scriptName, params)` - launches task with the script defined in `manifest.json, Takes _scriptName_ and _params_ as arguments.
-
-**Using context utils**
-
-```javascript
-//users/$id/post.js
-
+// POST /login example
 module.exports = {
-  contentType: 'application/json',
-  name: 'Get user by id',
-  handler: (req, res) =>
-  {
-    const {id} = req.pathParams;
-
-    const {get} = module.context;
-    const doc = get('users', id).toArray();
-    res.send({result: doc[0]});
+  body: {
+    model: joi.object({
+      username: joi.string().required(),
+      password: joi.string().required()
+    }).required()
+  },
+  handler: (req, res) => {
+    // Authentication logic
+    const token = module.context.auth.encode({
+      userId: user._key,
+      roles: user.roles
+    });
+    
+    res.json({ token, user });
   }
 };
 ```
 
+### 🔄 Built-in CRUD Utilities
 
-
-**Using context utility runScript to send a message into Telegram Channel**
-
-The example below demonstrates how to send a message to Telegram Channel. Once we have our Telegram Bot token and Channel Id, we add into the scripts folder this piece of code:
+Simplify database operations with context utilities:
 
 ```javascript
-//scripts/telegram_chat_message.js
+const { get, insert, update, remove } = module.context;
 
-const request = require('@arangodb/request');
-
-const {argv} = module.context;
-
-const token = module.context.configuration.telegramToken;
-
-request.post(`https://api.telegram.org/bot${token}/sendMessage`, {
-  json: true,
-  body: argv[0]
-});
-
-module.exports = true;
+// Examples
+const user = get('users', id);
+const newUser = insert('users', { name, email });
+const updated = update('users', id, { status: 'active' });
+const removed = remove('users', id);
 ```
 
-Now we can call it, for exmaple, from our middleware:
+### 📤 Request Validation
+
+Validate request payloads using Joi schemas:
 
 ```javascript
-module.context.use((req, res, next) =>
-{
-  const {runScript} = module.context;
-  runScript('telegram_chat_message', {
-    chat_id: '-CHANNEL_ID',
-    text: 'hi there from runScript'
-  });
-
-  next();
-});
+module.exports = {
+  body: {
+    model: joi.object({
+      name: joi.string().required(),
+      email: joi.string().email().required(),
+      age: joi.number().integer().min(18)
+    }).required()
+  },
+  handler: (req, res) => {
+    // Your validated data is available in req.body
+    res.json({ result: 'ok' });
+  }
+};
 ```
 
-Now, on every request, we will receive a message on our Telegram Channel. You can use it, for example, for logging into the channel any debug data or stack trace from exceptions fired by your API. Telegram `sendMessage` params are documented on the [Telegram Bot API](https://core.telegram.org/bots/api#sendmessage) web page.
+## Docker Development
 
-### Session Management
+Run your services in Docker for consistent development environments:
 
-Foxx-Builder provides you with a generic Session Manager middleware that works via Headers Transport. To enable it, add the following lines into your index.js file:
+```bash
+# Start the Docker container
+yarn run docker:start
 
-```js
-const sessions = require('./sessions/index');
-sessions.init();
+# Setup the database
+yarn run docker:setup-db
+
+# Deploy with our deployment tool
+npm run deploy -- -H http://localhost:8529 -d dev -u root -p rootpassword
 ```
 
-By default, only /login, /logout, and /password-recovery resources are available without authentication once Session Manager is enabled. If you want to add more endpoints, you can do it in the following way:
+For more details, see the [Running in Docker](https://github.com/skitsanos/foxx-builder/wiki/Running-in-Docker) Wiki page.
 
-```javascript
-const sessions = require('./sessions/index');
-sessions.allowedResources = [
-  ...sessions.allowedResources,
-  '/echo'
-];
-sessions.init();
+## Testing Your API
+
+Test endpoints with [Hurl](https://hurl.dev):
+
+```
+GET {{URL}}/users/123
+
+HTTP/* 200
+[Asserts]
+jsonpath "$.user.name" == "John Doe"
 ```
 
-## Developing on Docker
+Run tests with:
 
-> More detailed information on this topic is available on the [Running in Docker](https://github.com/skitsanos/foxx-builder/wiki/Running-in-Docker) Wiki page
-
-In `Foxx-builder` v.2.x, we added `docker-compose.yml` file and a few shortcuts into `package.json` that will help you to develop your APIs and run them in docker. You can use `npm` or `yarn` to run 'shortcuts' instead of typing the whole command line yourself; just keep in mind that there is an order of actions to take into consideration,
-
-The flow would be like this:
-
-1. Start docker container: `yarn run docker:start`
-2. Setup the development database `yarn run docker:setup-db`
-3. Register development database server with Foxx CLI `yarn run register-foxx-dev-server`
-4. Install Foxx Microservices on `/api` endpoint on development database `yarn run install-foxx-dev`
-
-After microservices are installed, during the development, all you will need to call is a `replace` method - `yarn run replace-foxx-dev`
-
-
-
-## Testing Foxx Services APIs
-
-You use [Hurl](https://hurl.dev) to test your API endpoints.
-
-> Hurl is a command-line tool that runs **HTTP requests** defined in a simple **plain text format**.
->
-> It can perform requests, capture values, and evaluate queries on headers and body responses. Hurl is very versatile: it can be used for both **fetching data** and **testing HTTP** sessions.
-
-There are two ways you can run hurl tests, - via the docker container or by having hurl installed.
-
-Testing with `hurl` running in docker:
-
-```shell
-docker run --network host --rm -it -v "$(pwd)/.api-test":/app "orangeopensource/hurl:latest" --test --variables-file /app/.vars /app/hello.hurl
-```
-
-Or, if you already have to `hurl` installed ([Installation instructions](https://hurl.dev/docs/installation.html))
-
-```shell
+```bash
 hurl --test --variables-file .api-test/.vars .api-test/*.hurl
 ```
 
-`.vars` file contains variables needed for your tests and can look like this:
-
-```
-URL=http://localhost:8529/_db/dev/api
-```
-
-So, all together with variables, you can make an API test that will check if your API is up:
-
-```
-GET {{URL}}/
-
-HTTP/* 200
-```
-
-The `{{URL}}` referres to `URL` variable from `.vars` file.
-
-
-
 ## Integrations
 
-### Proxying requests on Netlify
+### Netlify Integration
 
-> More detailed information on this topic is available on the [Working with Netlify](https://github.com/skitsanos/foxx-builder/wiki/Working-with-Netlify) Wiki page
-
-#### netlify.toml example configuration
-
-If you are using Netlify, here is an example of how to proxy your URL API calls to ArangoDB Microservices.
+Deploy with Netlify using proxy rules:
 
 ```toml
-[build]
-base = "."
-publish = "./dist"
-functions = "netlify-functions/"
-
-[[redirects]]
-from = "/*"
-to = "/index.html"
-status = 200
-
 [[redirects]]
 from = "/api/*"
 to = "http://{YOUR_HOSTNAME}:8529/_db/{YOUR_DATABASE}/{YOUR_ENDPOINT}/:splat"
 status = 200
 force = true
-headers = {X-From = "Netlify"}
-
-[[headers]]
-for = "/*"
-
-[headers.values]
-x-designed-by = "skitsanos, https://github.com/skitsanos"
 ```
 
-Before deploying it on Netlify, make sure there are two variables replaced:
+See the [Working with Netlify](https://github.com/skitsanos/foxx-builder/wiki/Working-with-Netlify) Wiki page for details.
 
-- `{YOUR_HOSTNAME}` - the hostname where ArangoDb is running
-- `{YOUR_DATABASE}` - ArangoDB database name where the Foxx service is installed
-- `{YOUR_ENDPOINT}` - endpoint where your flex services are mounted
+## Project Structure
 
-Also, please refer to [Exposing Foxx to the browser](https://www.arangodb.com/docs/stable/foxx-guides-browser.html) on the ArangoDB documentation website.
+```
+src/
+ ├── builder/       # Foxx Builder core (don't modify)
+ │   ├── context-extensions.js
+ │   └── index.js
+ ├── routes/        # Your API endpoints go here
+ └── index.js       # Main service entry point
+manifest.json       # Service configuration
+package.json        # Dependencies
+```
 
+## Authentication Configuration
+
+Configure authentication in the manifest.json file:
+
+```json
+"configuration": {
+  "useAuth": {
+    "default": false,
+    "type": "boolean",
+    "description": "Enable JWT authentication middleware"
+  },
+  "jwtSecret": {
+    "type": "string",
+    "default": "SuperSecretWord"
+  },
+  "useRefreshTokens": {
+    "default": false,
+    "type": "boolean"
+  }
+}
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License.

@@ -9,7 +9,18 @@
   },
   "license": "MIT",
   "private": true,
+  "scripts": {
+    "deploy": "node tools/deploy.js install",
+    "replace": "node tools/deploy.js replace",
+    "uninstall": "node tools/deploy.js uninstall",
+    "list-services": "node tools/deploy.js list"
+  },
   "dependencies": {
     "graphql": "15.8.0"
+  },
+  "devDependencies": {
+    "archiver": "^7.0.1",
+    "commander": "^13.1.0",
+    "form-data": "^4.0.2"
   }
 }

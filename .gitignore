@@ -1,3 +1,4 @@
-/.idea/
+.idea/
+development_notes/
 /node_modules/
 *.lock

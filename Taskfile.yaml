@@ -3,25 +3,35 @@
 # against your codebase. It is heavily inspired by Taskfile from the Go world.
 #
 # @author Skitsanos, https://github.com/skitsanos
-# @version 2.0.0
+# @version 2.1.0
 #
 version: '3'
 
 vars:
-  SERVER: foxx-sandbox
+  # Server and database configuration
   DATABASE_NAME: foxx-sandbox
+  SERVER_HOST: http://localhost
 
+  # API endpoints for different environments
   API_ENDPOINT_DEV: /api-dev
   API_ENDPOINT_PROD: /api
 
+  # Testing configuration
   HURL: hurl --variables-file ./.api-test/.vars
   HURL_TEST_URL: --variable URL=http://localhost:8529/_db/{{.DATABASE_NAME}}{{.API_ENDPOINT_DEV}}
 
+  # Docker configuration
   DOCKER_BIND_PORT: 8529
   DOCKER_ROOT_USERNAME: root
   DOCKER_ROOT_PASSWORD: openSesame
   DOCKER_CREDENTIALS: --server.username {{.DOCKER_ROOT_USERNAME}} --server.password {{.DOCKER_ROOT_PASSWORD}}
 
+  # Deployment tool configuration
+  DEPLOY_TOOL: node tools/deploy.js
+  DEPLOY_ARGS_DOCKER: -H {{.SERVER_HOST}}:{{.DOCKER_BIND_PORT}} -d {{.DATABASE_NAME}} -u {{.DOCKER_ROOT_USERNAME}} -p {{.DOCKER_ROOT_PASSWORD}}
+  DEPLOY_ARGS_DEV: -H {{.SERVER_HOST}}:8529 -d {{.DATABASE_NAME}} -u dev -p sandbox
+
+  # Console colors for better readability
   RED: "\e[31m"
   GREEN: "\e[32m"
   GREEN_BOLD: "\e[1;32m"
@@ -34,6 +44,8 @@ silent: true
 tasks:
   #
   # Setup docker container and create a database
+  # This task creates a new ArangoDB docker container if it doesn't exist yet,
+  # waits for it to be ready, and then creates the target database if needed.
   #
   docker-db-setup:
     cmds:
@@ -76,23 +88,33 @@ tasks:
           else
             echo -e "{{.GREEN}}Database exists{{.ENDCOLOR}}"
           fi
+
   #
-  # Create the database backup
+  # Create a database backup
+  # This task dumps the current database to the backup directory
+  # mounted to the Docker container.
   #
   docker-db-backup:
     cmds:
       - cmd: |
+          echo -e "{{.BLUE}}Creating database backup...{{.ENDCOLOR}}"
           docker exec arangodb-{{.DATABASE_NAME}} arangodump --overwrite true --server.database {{.DATABASE_NAME}} {{.DOCKER_CREDENTIALS}} --output-directory /backup
+          echo -e "{{.GREEN}}Backup completed successfully{{.ENDCOLOR}}"
+
   #
-  # Restore the database from the backup created earlier
+  # Restore the database from backup
+  # This task restores the database from a previously created backup.
   #
   docker-db-restore:
     cmds:
       - cmd: |
+          echo -e "{{.BLUE}}Restoring database from backup...{{.ENDCOLOR}}"
           docker exec arangodb-{{.DATABASE_NAME}} arangorestore --server.database {{.DATABASE_NAME}} {{.DOCKER_CREDENTIALS}} --input-directory /backup
+          echo -e "{{.GREEN}}Database restored successfully{{.ENDCOLOR}}"
 
   #
-  # Run tests
+  # Run all API tests
+  # Executes all the API tests defined in the .api-test directory.
   #
   test:
     cmds:
@@ -103,7 +125,8 @@ tasks:
           {{.HURL}} {{.HURL_TEST_URL}} ./.api-test/hello.hurl
 
   #
-  # Run test by name (without an extension)
+  # Run a specific API test by name
+  # Allows running a single test by providing its name without the .hurl extension.
   #
   test-one:
     cmds:
@@ -113,64 +136,107 @@ tasks:
           echo -e "{{.ENDCOLOR}}\n"
 
   #
-  # Deploy a development version of API
+  # List all installed Foxx services
+  # This task lists all microservices installed on the specified database.
+  #
+  list-services:
+    cmds:
+      - cmd: |
+          echo -e "{{.BLUE}}Listing Foxx services in Docker...{{.ENDCOLOR}}"
+          {{.DEPLOY_TOOL}} list {{.DEPLOY_ARGS_DOCKER}}
+
+  #
+  # Deploy a development version to Docker
+  # This task deploys the service to the development endpoint in the Docker container,
+  # using our custom deployment tool instead of foxx-cli.
   #
   deploy-docker:
     cmds:
       - cmd: |
-          set +e
-          is_docker_found=$(foxx server list | grep 'docker-{{.SERVER}}')
-          set -e
-          if [[ -z $is_docker_found ]]; then
-            echo "{{.BLUE}}Registering docker-{{.SERVER}} server{{.ENDCOLOR}}"
-            foxx server set docker-{{.SERVER}} http://{{.DOCKER_ROOT_USERNAME}}:{{.DOCKER_ROOT_PASSWORD}}@localhost:{{.DOCKER_BIND_PORT}}
-          else
-            echo "{{.BLUE}}Found docker-{{.SERVER}} server{{.ENDCOLOR}}"
-          fi
+          echo -e "{{.BLUE}}Checking if service exists at {{.API_ENDPOINT_DEV}}...{{.ENDCOLOR}}"
           
-          set +e
-          is_found=$(foxx list --server "docker-{{.SERVER}}" --database {{.DATABASE_NAME}} | grep '{{.API_ENDPOINT_DEV}}')
-          set -e
-          if [ -z "$is_found" ]; then
-            echo -e "{{.BLUE}}Deploying on {{.API_ENDPOINT_DEV}} endpoint{{.ENDCOLOR}}"
-            foxx install "{{.API_ENDPOINT_DEV}}" . --server "docker-{{.SERVER}}" --database "{{.DATABASE_NAME}}"
+          # Get the list of services
+          SERVICES=$({{.DEPLOY_TOOL}} list {{.DEPLOY_ARGS_DOCKER}})
+          
+          # Check if our service is already installed
+          if echo "$SERVICES" | grep -q "{{.API_ENDPOINT_DEV}}"; then
+            echo -e "{{.BLUE}}Replacing service at {{.API_ENDPOINT_DEV}} endpoint{{.ENDCOLOR}}"
+            {{.DEPLOY_TOOL}} replace {{.DEPLOY_ARGS_DOCKER}} -m {{.API_ENDPOINT_DEV}}
           else
-            echo -e "{{.BLUE}}Upgrading {{.API_ENDPOINT_DEV}} endpoint{{.ENDCOLOR}}"
-            foxx upgrade "{{.API_ENDPOINT_DEV}}" . --server "docker-{{.SERVER}}" --database "{{.DATABASE_NAME}}"
-          fi      
+            echo -e "{{.BLUE}}Installing service at {{.API_ENDPOINT_DEV}} endpoint{{.ENDCOLOR}}"
+            {{.DEPLOY_TOOL}} install {{.DEPLOY_ARGS_DOCKER}} -m {{.API_ENDPOINT_DEV}}
+          fi
+          echo -e "{{.GREEN}}Deployment to Docker completed successfully{{.ENDCOLOR}}"
 
   #
-  # Deploy a development version of API
+  # Deploy a development version
+  # This task deploys the service to the development endpoint in a regular (non-Docker) ArangoDB instance,
+  # using our custom deployment tool instead of foxx-cli.
   #
   deploy-dev:
     cmds:
       - cmd: |
-          set +e
-          is_found=$(foxx list --server "{{.SERVER}}" --database {{.DATABASE_NAME}} | grep '{{.API_ENDPOINT_DEV}}')
-          set -e
-          if [ -z "$is_found" ]; then
-            echo -e "{{.BLUE}}Deploying on {{.API_ENDPOINT_DEV}} endpoint{{.ENDCOLOR}}"
-            foxx install "{{.API_ENDPOINT_DEV}}" . --server "{{.SERVER}}" --database "{{.DATABASE_NAME}}"
+          echo -e "{{.BLUE}}Checking if service exists at {{.API_ENDPOINT_DEV}}...{{.ENDCOLOR}}"
+          
+          # Get the list of services
+          SERVICES=$({{.DEPLOY_TOOL}} list {{.DEPLOY_ARGS_DEV}})
+          
+          # Check if our service is already installed
+          if echo "$SERVICES" | grep -q "{{.API_ENDPOINT_DEV}}"; then
+            echo -e "{{.BLUE}}Replacing service at {{.API_ENDPOINT_DEV}} endpoint{{.ENDCOLOR}}"
+            {{.DEPLOY_TOOL}} replace {{.DEPLOY_ARGS_DEV}} -m {{.API_ENDPOINT_DEV}}
           else
-            echo -e "{{.BLUE}}Upgrading {{.API_ENDPOINT_DEV}} endpoint{{.ENDCOLOR}}"
-            foxx upgrade "{{.API_ENDPOINT_DEV}}" . --server "{{.SERVER}}" --database "{{.DATABASE_NAME}}"
+            echo -e "{{.BLUE}}Installing service at {{.API_ENDPOINT_DEV}} endpoint{{.ENDCOLOR}}"
+            {{.DEPLOY_TOOL}} install {{.DEPLOY_ARGS_DEV}} -m {{.API_ENDPOINT_DEV}}
           fi
+          echo -e "{{.GREEN}}Development deployment completed successfully{{.ENDCOLOR}}"
 
   #
-  # Deploy a production version of API
+  # Deploy a production version
+  # This task runs tests first, then deploys the service to the production endpoint,
+  # using our custom deployment tool instead of foxx-cli.
+  # Requires manual confirmation before deploying to production.
   #
   deploy-prod:
     prompt: You are deploying to production environment. Please confirm.
     cmds:
       - task: test
       - cmd: |
-          set +e
-          is_found=$(foxx list --server "{{.SERVER}}" --database {{.DATABASE_NAME}} | grep '{{.API_ENDPOINT_PROD}}')
-          set -e
-          if [ -z "$is_found" ]; then
-            echo -e "{{.BLUE}}Deploying on {{.API_ENDPOINT_PROD}} endpoint{{.ENDCOLOR}}"
-            foxx install "{{.API_ENDPOINT_PROD}}" . --server "{{.SERVER}}" --database "{{.DATABASE_NAME}}"
+          echo -e "{{.BLUE}}Checking if service exists at {{.API_ENDPOINT_PROD}}...{{.ENDCOLOR}}"
+          
+          # Get the list of services
+          SERVICES=$({{.DEPLOY_TOOL}} list {{.DEPLOY_ARGS_DEV}})
+          
+          # Check if our service is already installed
+          if echo "$SERVICES" | grep -q "{{.API_ENDPOINT_PROD}}"; then
+            echo -e "{{.BLUE}}Replacing service at {{.API_ENDPOINT_PROD}} endpoint{{.ENDCOLOR}}"
+            {{.DEPLOY_TOOL}} replace {{.DEPLOY_ARGS_DEV}} -m {{.API_ENDPOINT_PROD}}
           else
-            echo -e "{{.BLUE}}Upgrading {{.API_ENDPOINT_PROD}} endpoint{{.ENDCOLOR}}"
-            foxx upgrade "{{.API_ENDPOINT_PROD}}" . --server "{{.SERVER}}" --database "{{.DATABASE_NAME}}"
+            echo -e "{{.BLUE}}Installing service at {{.API_ENDPOINT_PROD}} endpoint{{.ENDCOLOR}}"
+            {{.DEPLOY_TOOL}} install {{.DEPLOY_ARGS_DEV}} -m {{.API_ENDPOINT_PROD}}
           fi
+          echo -e "{{.GREEN}}Production deployment completed successfully{{.ENDCOLOR}}"
+
+  #
+  # Uninstall a development version
+  # This task removes the service from the development endpoint.
+  #
+  uninstall-dev:
+    cmds:
+      - cmd: |
+          echo -e "{{.BLUE}}Uninstalling service from {{.API_ENDPOINT_DEV}} endpoint...{{.ENDCOLOR}}"
+          {{.DEPLOY_TOOL}} uninstall {{.DEPLOY_ARGS_DEV}} -m {{.API_ENDPOINT_DEV}}
+          echo -e "{{.GREEN}}Service uninstalled successfully{{.ENDCOLOR}}"
+
+  #
+  # Uninstall a production version
+  # This task removes the service from the production endpoint.
+  # Requires manual confirmation before uninstalling from production.
+  #
+  uninstall-prod:
+    prompt: You are uninstalling from production environment. Please confirm.
+    cmds:
+      - cmd: |
+          echo -e "{{.BLUE}}Uninstalling service from {{.API_ENDPOINT_PROD}} endpoint...{{.ENDCOLOR}}"
+          {{.DEPLOY_TOOL}} uninstall {{.DEPLOY_ARGS_DEV}} -m {{.API_ENDPOINT_PROD}}
+          echo -e "{{.GREEN}}Service uninstalled successfully{{.ENDCOLOR}}"

@@ -1,49 +1,103 @@
+/**
+ * Main entry point for Foxx service
+ * 
+ * Initializes the service and sets up middleware based on configuration
+ */
 const builder = require('./builder/index');
+const rateLimiter = require('./builder/middleware/rate-limiter');
+const scheduler = require('./builder/scheduler');
+
+// Initialize the Foxx Builder
 builder.init();
 
-//
-// Example on how to use JWT token authorization.
-// Only /login and /signup requests will be allowed without authentication
-//
-module.context.use((req, res, next) =>
-{
-    if (req.path === '/' || req.path.match(/\/(login|signup|users)/igu))
-    {
-        next();
-    }
-    else
-    {
-        const {auth: authorization} = req;
+// Initialize the scheduler
+scheduler.init(module.context);
+console.log('Task scheduler initialized');
 
-        const {
-            auth,
-            get
-        } = module.context;
+// Get configuration
+const { 
+    useAuth = false,
+    authExemptPaths = ['/', '/login', '/signup']
+} = module.context.configuration;
 
-        if (!authorization)
-        {
-            res.throw(403, 'Missing authorization header');
+// Check if authentication is enabled
+if (useAuth) {
+    console.log('Authentication middleware is enabled');
+    
+    // Add authentication middleware
+    module.context.use((req, res, next) => {
+        try {
+            const { auth } = module.context;
+            
+            // Create the authentication middleware
+            const authMiddleware = auth.createMiddleware({
+                // Use exempt paths from configuration
+                exempt: authExemptPaths,
+                
+                // Success handler
+                onSuccess: (req, res) => {
+                    // Attach user information to the request if available
+                    if (req.userId) {
+                        try {
+                            const user = module.context.get('users', req.userId).toArray()[0];
+                            if (user) {
+                                req.user = user;
+                            }
+                        } catch (error) {
+                            console.error(`Failed to load user ${req.userId}:`, error.message);
+                        }
+                    }
+                },
+                
+                // Error handler
+                onError: (res, message, statusCode) => {
+                    res.status(statusCode);
+                    res.json({
+                        error: true,
+                        message,
+                        code: statusCode
+                    });
+                }
+            });
+            
+            // Apply the middleware
+            authMiddleware(req, res, next);
+        } catch (error) {
+            console.error('Authentication middleware error:', error.message);
+            res.throw(500, 'Authentication system error');
         }
+    });
+    
+    console.log('Authentication middleware registered');
+} else {
+    console.log('Authentication middleware is disabled');
+}
 
-        const {bearer: token} = authorization;
-        if (!token)
-        {
-            res.throw(403, 'Missing authorization token');
-        }
+// Configure rate limiting middleware if enabled
+const {
+    useRateLimiting = false,
+    requestsPerMinute = 60,
+    rateLimitExemptPaths = ['/status', '/health'],
+    rateLimitExemptRoles = ['admin']
+} = module.context.configuration;
 
-        if (auth.isExpired(token))
-        {
-            res.throw(403, 'The token is expired');
-        }
+if (useRateLimiting) {
+    console.log('Rate limiting middleware is enabled');
+    
+    // Initialize rate limiter with configuration
+    const rateLimitMiddleware = rateLimiter.init({
+        enabled: true,
+        requestsPerMinute,
+        exemptPaths: rateLimitExemptPaths,
+        exemptRoles: rateLimitExemptRoles
+    });
+    
+    // Apply the rate limiting middleware
+    module.context.use(rateLimitMiddleware);
+    
+    console.log(`Rate limiting middleware registered (${requestsPerMinute} requests per minute)`);
+} else {
+    console.log('Rate limiting middleware is disabled');
+}
 
-        const tokenDetails = auth.decode(token);
-        const foundUser = get('users', tokenDetails.userId).toArray()[0];
-
-        if (!foundUser)
-        {
-            res.throw(403, 'Authorization terminated.');
-        }
-
-        next();
-    }
-});
+// Additional middleware can be added here
