@@ -4,7 +4,6 @@ version: 2.1
 # Use orbs for simplified configuration
 orbs:
   node: circleci/node@5.1.0
-  docker: circleci/docker@2.2.0
 
 # Define reusable commands
 commands:
@@ -58,6 +57,7 @@ jobs:
       ARANGO_PASSWORD: sandbox
       ARANGO_DB: dev
       ARANGO_ROOT_PASSWORD: openSesame
+      ARANGO_VERSION: "3.10.4"
     steps:
       - checkout
       
@@ -73,16 +73,25 @@ jobs:
           command: npm install -g foxx-cli
       
       - install-hurl
-      # Setup remote docker without specifying version to use the default
-      - setup_remote_docker
-      - docker/install-docker-compose
       
-      # Start ArangoDB
+      # Setup remote docker
+      - setup_remote_docker
+      
+      # Start ArangoDB using docker run instead of docker-compose
       - run:
-          name: "Start Docker"
+          name: "Start ArangoDB"
           command: |
-            docker-compose up
-          background: true
+            # Create backup directory for volume mounting
+            mkdir -p .backup
+            
+            # Run ArangoDB container
+            docker run \
+              --name arangodb-dev \
+              -p 8529:8529 \
+              -e ARANGO_ROOT_PASSWORD=${ARANGO_ROOT_PASSWORD} \
+              -v $(pwd)/.backup:/backup \
+              -d arangodb/arangodb:${ARANGO_VERSION}
+          background: false
       
       - wait-for-arangodb:
           max_wait: 90
@@ -91,7 +100,10 @@ jobs:
       - run:
           name: "Setup Database"
           command: |
-            docker exec -it arangodb-dev arangosh --server.username root --server.password ${ARANGO_ROOT_PASSWORD} --javascript.execute-string "db._createDatabase('${ARANGO_DB}',{},[{username: '${ARANGO_USER}', passwd: '${ARANGO_PASSWORD}', active: true}]);"
+            docker exec arangodb-dev arangosh \
+              --server.username root \
+              --server.password ${ARANGO_ROOT_PASSWORD} \
+              --javascript.execute-string "db._createDatabase('${ARANGO_DB}',{},[{username: '${ARANGO_USER}', passwd: '${ARANGO_PASSWORD}', active: true}]);"
       
       # Register and install Foxx Service
       - run:
