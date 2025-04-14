@@ -4,7 +4,7 @@ version: 2.1
 # Use orbs for simplified configuration
 orbs:
   node: circleci/node@5.1.0
-  docker: circleci/docker@2.2.0
+  docker: circleci/docker@2.8.2
 
 # Define reusable commands
 commands:
