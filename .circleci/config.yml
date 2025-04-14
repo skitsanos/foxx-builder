@@ -48,7 +48,7 @@ commands:
 # Define jobs
 jobs:
   api-test:
-    # Explicitly specify the executor type with the latest LTS Node.js version (20.10.0 as of April 2025)
+    # Explicitly specify the executor type with the latest LTS Node.js version
     executor:
       name: node/default
       tag: '20.10.0'
@@ -72,8 +72,8 @@ jobs:
           command: npm install -g foxx-cli
       
       - install-hurl
-      - setup_remote_docker:
-          version: 20.10.14
+      # Setup remote docker without specifying version to use the default
+      - setup_remote_docker
       - docker/install-docker-compose
       
       # Start ArangoDB
