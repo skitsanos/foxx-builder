@@ -1,53 +1,29 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/2.0/configuration-reference
+# CircleCI configuration file version 2.1
 version: 2.1
 
+# Use orbs for simplified configuration
+orbs:
+  node: circleci/node@5.1.0
+  docker: circleci/docker@2.2.0
 
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
-jobs:
-  api-test:
-    parallelism: 4
-    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
-    #docker:
-    #  - image: cimg/base:stable
-    machine:
-      image: ubuntu-2004:202010-01
-    resource_class: large
-    # Add steps to the job
-    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
+# Define reusable commands
+commands:
+  install-hurl:
+    description: "Install the Hurl HTTP testing tool"
     steps:
-      - checkout
-
       - run:
-          name: "Install Node.js"
+          name: "Install Hurl"
           command: |
-            nvm install 18
-            nvm use 18 && nvm alias default 18
+            curl -LO https://github.com/Orange-OpenSource/hurl/releases/download/4.1.0/hurl_4.1.0_amd64.deb
+            sudo dpkg -i hurl_4.1.0_amd64.deb
 
-      - run:
-          name: "Install Foxx CLI"
-          command: |
-            #yarn global add foxx-cli
-            npm i -g foxx-cli
-
-      - run:
-          name: "Get ArangoDB"
-          command: docker pull arangodb/arangodb:latest
-
-      - run:
-          name: "Get Hurl"
-          command: |
-            curl -LO https://github.com/Orange-OpenSource/hurl/releases/download/1.8.0/hurl_1.8.0_amd64.deb
-            sudo dpkg -i hurl_1.8.0_amd64.deb
-
-      - run:
-          name: "Start Docker"
-          command: |
-            docker-compose up
-          background: true
-
+  wait-for-arangodb:
+    description: "Wait for ArangoDB to be ready"
+    parameters:
+      max_wait:
+        type: integer
+        default: 60
+    steps:
       - run:
           name: "Waiting for ArangoDB to Initialize"
           command: |
@@ -67,30 +43,85 @@ jobs:
                 done
                 return 1
             }
-            wait_for_url 'http://localhost:8529' 60
+            wait_for_url 'http://localhost:8529' << parameters.max_wait >>
 
+# Define jobs
+jobs:
+  api-test:
+    # Explicitly specify the executor type with the latest LTS Node.js version (20.10.0 as of April 2025)
+    executor:
+      name: node/default
+      tag: '20.10.0'
+    resource_class: large
+    environment:
+      ARANGO_USER: dev
+      ARANGO_PASSWORD: sandbox
+      ARANGO_DB: dev
+      ARANGO_ROOT_PASSWORD: openSesame
+    steps:
+      - checkout
+      
+      # Setup tools and dependencies
+      - node/install-packages:
+          pkg-manager: npm
+          cache-path: ~/project/node_modules
+          cache-version: v1-{{ checksum "package.json" }}
+      
+      - run:
+          name: "Install Foxx CLI"
+          command: npm install -g foxx-cli
+      
+      - install-hurl
+      - setup_remote_docker:
+          version: 20.10.14
+      - docker/install-docker-compose
+      
+      # Start ArangoDB
+      - run:
+          name: "Start Docker"
+          command: |
+            docker-compose up
+          background: true
+      
+      - wait-for-arangodb:
+          max_wait: 90
+      
+      # Setup Database
       - run:
           name: "Setup Database"
           command: |
-            docker exec -it arangodb-dev arangosh --server.username root --server.password openSesame --javascript.execute-string "db._createDatabase('dev',{},[{username: 'dev', passwd: 'sandbox', active: true}]);"
-
+            docker exec -it arangodb-dev arangosh --server.username root --server.password ${ARANGO_ROOT_PASSWORD} --javascript.execute-string "db._createDatabase('${ARANGO_DB}',{},[{username: '${ARANGO_USER}', passwd: '${ARANGO_PASSWORD}', active: true}]);"
+      
+      # Register and install Foxx Service
       - run:
           name: "Register Foxx API services"
           command: |
-            foxx server set dev http://dev:sandbox@localhost:8529
-
+            foxx server set dev http://${ARANGO_USER}:${ARANGO_PASSWORD}@localhost:8529
+      
       - run:
           name: "Install API services"
           command: |
-            npm i
-            foxx install /api . --server dev --database dev
-
+            foxx install /api . --server dev --database ${ARANGO_DB}
+      
+      # Run API tests with reporting
       - run:
-          name: "Say hello"
-          command: hurl --test --variables-file .api-test/.vars .api-test/*.hurl
+          name: "Run API tests"
+          command: |
+            mkdir -p test-results/hurl
+            hurl --test \
+              --report-junit test-results/hurl/results.xml \
+              --variables-file .api-test/.vars \
+              .api-test/*.hurl
+      
+      # Store test results and artifacts
+      - store_test_results:
+          path: test-results
+      
+      - store_artifacts:
+          path: test-results
+          destination: test-reports
 
-# Invoke jobs via workflows
-# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+# Define workflow
 workflows:
   test-api-services:
     jobs:
