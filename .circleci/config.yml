@@ -57,15 +57,13 @@ jobs:
       ARANGO_PASSWORD: sandbox
       ARANGO_DB: dev
       ARANGO_ROOT_PASSWORD: openSesame
-      ARANGO_VERSION: "3.10.4"
+      ARANGO_VERSION: "latest"
     steps:
       - checkout
       
       # Setup tools and dependencies - using basic cache without checksum
       - node/install-packages:
           pkg-manager: npm
-          cache-path: ~/project/node_modules
-          cache-version: v1
           override-ci-command: npm install
       
       - run:
