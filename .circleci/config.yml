@@ -1,12 +1,17 @@
 # CircleCI configuration file version 2.1
 version: 2.1
 
-# Use orbs for simplified configuration
-orbs:
-  node: circleci/node@5.1.0
-
 # Define reusable commands
 commands:
+  install-bun:
+    description: "Install Bun package manager"
+    steps:
+      - run:
+          name: "Install Bun"
+          command: |
+            curl -fsSL https://bun.sh/install | bash
+            export PATH="$HOME/.bun/bin:$PATH"
+            echo 'export PATH="$HOME/.bun/bin:$PATH"' >> $BASH_ENV
   install-hurl:
     description: "Install the Hurl HTTP testing tool"
     steps:
@@ -21,7 +26,7 @@ commands:
     parameters:
       max_wait:
         type: integer
-        default: 60
+        default: 90
     steps:
       - run:
           name: "Waiting for ArangoDB to Initialize"
@@ -47,33 +52,31 @@ commands:
 # Define jobs
 jobs:
   api-test:
-    # Use the latest LTS Node.js version
-    executor:
-      name: node/default
-      tag: 'lts'  # Changed from '20.10.0' to 'lts' to always use latest LTS
+    # Use a machine executor since we're installing Bun directly
+    machine:
+      image: ubuntu-2204:current
     resource_class: large
     environment:
       ARANGO_USER: dev
       ARANGO_PASSWORD: sandbox
       ARANGO_DB: dev
       ARANGO_ROOT_PASSWORD: openSesame
-      ARANGO_VERSION: "latest"
+      ARANGO_VERSION: "3.12.14"
     steps:
       - checkout
 
       # Setup tools and dependencies
-      - node/install-packages:
-          pkg-manager: npm
-          override-ci-command: npm install
+      - install-bun
+
+      - run:
+          name: "Install dependencies"
+          command: bun install
 
       - run:
           name: "Install Foxx CLI"
-          command: npm install -g foxx-cli
+          command: bun add -g foxx-cli
 
       - install-hurl
-
-      # Setup remote docker
-      - setup_remote_docker
 
       # Start ArangoDB using docker run instead of docker-compose
       - run:
