@@ -61,7 +61,7 @@ jobs:
       ARANGO_PASSWORD: sandbox
       ARANGO_DB: dev
       ARANGO_ROOT_PASSWORD: openSesame
-      ARANGO_VERSION: "3.12.14"
+      ARANGO_VERSION: "3.12"
     steps:
       - checkout
 
