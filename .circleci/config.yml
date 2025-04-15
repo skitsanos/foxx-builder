@@ -61,10 +61,10 @@ jobs:
     steps:
       - checkout
 
-      # Setup tools and dependencies - improved with cache checksum
+      # Setup tools and dependencies
       - node/install-packages:
           pkg-manager: npm
-          cache-key: "npm-{{ arch }}-{{ checksum \"package.json\" }}"
+          override-ci-command: npm install
 
       - run:
           name: "Install Foxx CLI"
