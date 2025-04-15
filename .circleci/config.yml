@@ -47,10 +47,10 @@ commands:
 # Define jobs
 jobs:
   api-test:
-    # Explicitly specify the executor type with the latest LTS Node.js version
+    # Use the latest LTS Node.js version
     executor:
       name: node/default
-      tag: '20.10.0'
+      tag: 'lts'  # Changed from '20.10.0' to 'lts' to always use latest LTS
     resource_class: large
     environment:
       ARANGO_USER: dev
@@ -60,21 +60,21 @@ jobs:
       ARANGO_VERSION: "latest"
     steps:
       - checkout
-      
-      # Setup tools and dependencies - using basic cache without checksum
+
+      # Setup tools and dependencies - improved with cache checksum
       - node/install-packages:
           pkg-manager: npm
-          override-ci-command: npm install
-      
+          cache-key: "npm-{{ arch }}-{{ checksum \"package.json\" }}"
+
       - run:
           name: "Install Foxx CLI"
           command: npm install -g foxx-cli
-      
+
       - install-hurl
-      
+
       # Setup remote docker
       - setup_remote_docker
-      
+
       # Start ArangoDB using docker run instead of docker-compose
       - run:
           name: "Start ArangoDB"
@@ -90,10 +90,10 @@ jobs:
               -v $(pwd)/.backup:/backup \
               -d arangodb/arangodb:${ARANGO_VERSION}
           background: false
-      
+
       - wait-for-arangodb:
           max_wait: 90
-      
+
       # Setup Database
       - run:
           name: "Setup Database"
@@ -102,18 +102,18 @@ jobs:
               --server.username root \
               --server.password ${ARANGO_ROOT_PASSWORD} \
               --javascript.execute-string "db._createDatabase('${ARANGO_DB}',{},[{username: '${ARANGO_USER}', passwd: '${ARANGO_PASSWORD}', active: true}]);"
-      
+
       # Register and install Foxx Service
       - run:
           name: "Register Foxx API services"
           command: |
             foxx server set dev http://${ARANGO_USER}:${ARANGO_PASSWORD}@localhost:8529
-      
+
       - run:
           name: "Install API services"
           command: |
             foxx install /api . --server dev --database ${ARANGO_DB}
-      
+
       # Run API tests with reporting
       - run:
           name: "Run API tests"
@@ -123,11 +123,11 @@ jobs:
               --report-junit test-results/hurl/results.xml \
               --variables-file .api-test/.vars \
               .api-test/*.hurl
-      
+
       # Store test results and artifacts
       - store_test_results:
           path: test-results
-      
+
       - store_artifacts:
           path: test-results
           destination: test-reports
