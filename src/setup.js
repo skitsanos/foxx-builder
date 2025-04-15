@@ -1,34 +1,11 @@
-    {
-        name: 'scheduledTasks',
-        index: [
-            {
-                type: 'hash',
-                fields: ['name']
-            },
-            {
-                type: 'skiplist',
-                fields: ['nextRun']
-            },
-            {
-                type: 'hash',
-                fields: ['status']
-            }
-        ]
-    },/**
- * Setup script for Foxx service
- * 
- * This script is run when the service is installed or upgraded.
- * It creates necessary collections and indexes, and initializes the configuration.
- * 
- * @version 2.0.0
- * @author skitsanos
- */
-
 const { db } = require('@arangodb');
 
 // Initialize configuration
 const getConfig = require('./builder/config');
 const config = getConfig(module.context);
+
+// Load scheduler
+const scheduler = require('./builder/scheduler');
 
 console.log('Initializing Foxx service...');
 
@@ -227,6 +204,27 @@ if (rolesCollection.count() === 0) {
     }
 }
 
-// Additional setup steps can be added here
+// Initialize scheduler service
+console.log('Initializing scheduler service...');
+try {
+    // Check if required collections exist
+    if (!db._collection('scheduledTasks')) {
+        console.error('scheduledTasks collection not found. Scheduler initialization failed.');
+    } else {
+        scheduler.init(module.context);
+        console.log('Scheduler service initialized successfully');
+
+        // Activate any tasks that should be running
+        const count = db._query(`
+            FOR task IN scheduledTasks
+            FILTER task.status IN ['active', 'retry-scheduled']
+            UPDATE task WITH { updatedAt: ${new Date().getTime()} } IN scheduledTasks
+            RETURN 1
+        `).toArray().length;
+        console.log(`Activated ${count} scheduled tasks`);
+    }
+} catch (error) {
+    console.error(`Error initializing scheduler service: ${error.message}`);
+}
 
 console.log('Setup completed successfully');

@@ -1,6 +1,8 @@
 /**
  * Scheduler Service for Foxx Builder
  * 
+ * @module builder/scheduler
+ * 
  * Provides a comprehensive task scheduling system with:
  * - One-time and recurring tasks
  * - Cron-like scheduling syntax
@@ -140,47 +142,121 @@ const parseCronExpression = (cronExpression) => {
  */
 const scheduler = {
     /**
+     * Context reference
+     */
+    context: null,
+    
+    /**
+     * Initialize the scheduler
+     * 
+     * @param {Object} context - Foxx module context
+     * @returns {Object} - Scheduler instance
+     */
+    /**
      * Initialize the scheduler
      * 
      * @param {Object} context - Foxx module context
      * @returns {Object} - Scheduler instance
      */
     init(context) {
+        if (!context) {
+            throw new Error('Context is required for scheduler initialization');
+        }
+        
         this.context = context;
+        
+        // Ensure the scheduledTasks collection exists
+        if (!db._collection('scheduledTasks')) {
+            console.warn('scheduledTasks collection not found. Creating it now.');
+            db._createDocumentCollection('scheduledTasks');
+            
+            // Create required indexes
+            const taskCollection = db._collection('scheduledTasks');
+            taskCollection.ensureIndex({ type: 'hash', fields: ['name'] });
+            taskCollection.ensureIndex({ type: 'skiplist', fields: ['nextRun'] });
+            taskCollection.ensureIndex({ type: 'hash', fields: ['status'] });
+        }
+        
         this.setupTaskRunner();
         return this;
     },
     
     /**
      * Set up the task runner that periodically checks for due tasks
+     * @param {number} checkInterval - Interval in seconds between checks (default: 60)
      */
-    setupTaskRunner() {
-        // Check if the task runner is already registered
-        const existingTask = tasks.get('scheduler-task-runner');
-        if (existingTask) {
-            tasks.unregister('scheduler-task-runner');
-        }
-        
-        // Register the task runner
-        tasks.register({
-            name: 'scheduler-task-runner',
-            period: 60, // Check every minute
-            command: () => {
-                try {
-                    this.processDueTasks();
-                } catch (error) {
-                    console.error('Error in scheduler task runner:', error.message);
-                }
+    setupTaskRunner(checkInterval = 60) {
+        try {
+            // Validate check interval
+            if (checkInterval < 10) {
+                console.warn('Check interval too small, using 10 seconds minimum');
+                checkInterval = 10;
             }
-        });
-        
-        console.log('Scheduler task runner registered');
+            
+            // Check if the task runner is already registered
+            const existingTask = tasks.get('scheduler-task-runner');
+            if (existingTask) {
+                console.log('Unregistering existing scheduler task runner');
+                tasks.unregister('scheduler-task-runner');
+            }
+            
+            // Register the task runner
+            tasks.register({
+                name: 'scheduler-task-runner',
+                period: checkInterval,
+                offset: 5, // Small offset to avoid potential timing issues
+                command: () => {
+                    try {
+                        const startTime = new Date().getTime();
+                        this.processDueTasks();
+                        const duration = new Date().getTime() - startTime;
+                        
+                        if (duration > checkInterval * 500) { // If processing takes more than half the check interval
+                            console.warn(`Scheduler task processing took ${duration}ms, which is more than half the check interval (${checkInterval * 1000}ms)`);
+                        }
+                    } catch (error) {
+                        console.error('Error in scheduler task runner:', error.stack || error.message);
+                    }
+                }
+            });
+            
+            console.log(`Scheduler task runner registered with ${checkInterval}s check interval`);
+            
+            // Register a watchdog task that ensures the main task runner is active
+            const watchdogTaskName = 'scheduler-watchdog';
+            const existingWatchdog = tasks.get(watchdogTaskName);
+            if (existingWatchdog) {
+                tasks.unregister(watchdogTaskName);
+            }
+            
+            tasks.register({
+                name: watchdogTaskName,
+                period: 300, // Check every 5 minutes
+                command: () => {
+                    try {
+                        // Check if the main task runner exists
+                        if (!tasks.get('scheduler-task-runner')) {
+                            console.warn('Scheduler task runner not found, re-registering...');
+                            this.setupTaskRunner(checkInterval);
+                        }
+                    } catch (error) {
+                        console.error('Error in scheduler watchdog:', error.message);
+                    }
+                }
+            });
+            
+            console.log('Scheduler watchdog registered');
+        } catch (error) {
+            console.error(`Failed to setup task runner: ${error.stack || error.message}`);
+            throw error;
+        }
     },
     
     /**
      * Process tasks that are due for execution
+     * @param {number} maxTasksPerRun - Maximum number of tasks to process in one run (default: 10)
      */
-    processDueTasks() {
+    processDueTasks(maxTasksPerRun = 10) {
         const now = new Date().getTime();
         
         try {
@@ -189,16 +265,37 @@ const scheduler = {
                 FOR task IN scheduledTasks
                 FILTER 
                     task.nextRun <= ${now} AND 
-                    task.status == 'active'
+                    task.status IN ['active', 'retry-scheduled']
+                SORT task.nextRun ASC
+                LIMIT ${maxTasksPerRun}
                 RETURN task
             `.toArray();
             
+            if (dueTasks.length > 0) {
+                console.log(`Processing ${dueTasks.length} due tasks`);
+            }
+            
             // Process each due task
             for (const task of dueTasks) {
-                this.executeTask(task);
+                try {
+                    this.executeTask(task);
+                } catch (taskError) {
+                    console.error(`Failed to execute task ${task._key} (${task.name}):`, taskError.stack || taskError.message);
+                    
+                    // Update task status to avoid continuous failures
+                    if (!this.shouldRetryTask(task)) {
+                        this.updateTaskStatus(task._key, 'failed');
+                        this.recordExecution(task._key, 'failed', null, 
+                            `Task execution failed with unhandled error: ${taskError.message}`);
+                    }
+                }
             }
+            
+            // Return number of processed tasks
+            return dueTasks.length;
         } catch (error) {
-            console.error('Error processing due tasks:', error.message);
+            console.error('Error processing due tasks:', error.stack || error.message);
+            return 0;
         }
     },
     
