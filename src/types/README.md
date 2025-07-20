@@ -33,7 +33,7 @@ For specific types, you can reference them directly:
 
 ```javascript
 /**
- * @typedef {import('../types').EndpointHandler} EndpointHandler
+ * @typedef {import('./types').EndpointHandler} EndpointHandler
  */
 
 /**

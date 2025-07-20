@@ -6,11 +6,13 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": "../../",
     "paths": {
-      "*": ["*"]
+      "*": ["*"],
+      "@types/*": ["src/types/*"]
     }
   },
   "include": [
-    "../**/*.js"
+    "../**/*.js",
+    "../**/*.d.ts"
   ],
   "exclude": [
     "node_modules"

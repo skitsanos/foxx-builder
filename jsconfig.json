@@ -4,10 +4,15 @@
     "target": "es2020",
     "module": "commonjs",
     "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@types/*": ["src/types/*"]
+    }
   },
   "include": [
-    "src/**/*.js"
+    "src/**/*.js",
+    "src/**/*.d.ts"
   ],
   "exclude": [
     "node_modules",
