@@ -4,6 +4,7 @@
  * Tracks and limits API requests based on client identifier (IP or token)
  * 
  * @version 1.0.0
+ * @author skitsanos
  */
 const { db } = require('@arangodb');
 const crypto = require('@arangodb/crypto');

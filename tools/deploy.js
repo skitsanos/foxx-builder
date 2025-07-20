@@ -89,7 +89,6 @@ async function createServiceZip(serviceDir, outputPath) {
                     '.git/**', 
                     '.backup/**',
                     '.idea/**',
-                    '.circleci/**',
                     '.github/**',
                     '.netlify/**',
                     '*.zip'

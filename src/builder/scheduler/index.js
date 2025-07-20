@@ -10,11 +10,14 @@
  * - Execution history and status tracking
  * 
  * @version 1.0.0
- * @author Claude
+ * @author skitsanos
  */
 const { db, query } = require('@arangodb');
 const tasks = require('@arangodb/tasks');
 const crypto = require('@arangodb/crypto');
+const request = require('@arangodb/request');
+const aql = require('@arangodb').aql;
+const emailService = require('../email');
 
 /**
  * Helper function to parse cron-like expressions
@@ -152,12 +155,6 @@ const scheduler = {
      * @param {Object} context - Foxx module context
      * @returns {Object} - Scheduler instance
      */
-    /**
-     * Initialize the scheduler
-     * 
-     * @param {Object} context - Foxx module context
-     * @returns {Object} - Scheduler instance
-     */
     init(context) {
         if (!context) {
             throw new Error('Context is required for scheduler initialization');
@@ -176,6 +173,9 @@ const scheduler = {
             taskCollection.ensureIndex({ type: 'skiplist', fields: ['nextRun'] });
             taskCollection.ensureIndex({ type: 'hash', fields: ['status'] });
         }
+        
+        // Initialize email service
+        emailService.init(context);
         
         this.setupTaskRunner();
         return this;
@@ -312,21 +312,32 @@ const scheduler = {
             // Create execution record
             const executionKey = this.recordExecution(task._key, 'started');
             
-            // Execute the task
+            // Execute the task based on its type
             const startTime = new Date().getTime();
+            let result;
             
-            // Use the existing runTask method from the context
-            this.context.runTask(
-                `scheduled-${task.name}`,
-                task.handler,
-                task.params || {}
-            );
+            switch (task.type) {
+                case 'script':
+                    result = this.executeScriptTask(task);
+                    break;
+                    
+                case 'webhook':
+                    result = this.executeWebhookTask(task);
+                    break;
+                    
+                case 'email':
+                    result = this.executeEmailTask(task);
+                    break;
+                    
+                default:
+                    throw new Error(`Unsupported task type: ${task.type}`);
+            }
             
             const endTime = new Date().getTime();
             const executionTime = endTime - startTime;
             
             // Update execution record
-            this.updateExecution(executionKey, 'completed', executionTime);
+            this.updateExecution(executionKey, 'completed', executionTime, null, result);
             
             // Reset retry count on successful execution
             if (task.retryCount > 0) {
@@ -348,6 +359,8 @@ const scheduler = {
                 // One-time task - mark as completed
                 this.updateTaskStatus(task._key, 'completed');
             }
+            
+            return result;
         } catch (error) {
             console.error(`Error executing task ${task.name}:`, error.message);
             
@@ -364,6 +377,154 @@ const scheduler = {
                 // Record failure in task executions
                 this.recordExecution(task._key, 'failed', null, error.message);
             }
+            
+            throw error;
+        }
+    },
+    
+    /**
+     * Execute a script task
+     * 
+     * @param {Object} task - Script task to execute
+     * @returns {Object} - Execution result
+     */
+    executeScriptTask(task) {
+        if (!task.handler) {
+            throw new Error(`Script task ${task.name} has no handler path`);
+        }
+        
+        try {
+            // Use the existing runTask method from the context
+            const result = this.context.runTask(
+                `scheduled-${task.name}`,
+                task.handler,
+                task.params || {}
+            );
+            
+            return {
+                success: true,
+                type: 'script',
+                result
+            };
+        } catch (error) {
+            throw new Error(`Script execution failed: ${error.message}`);
+        }
+    },
+    
+    /**
+     * Execute a webhook task
+     * 
+     * @param {Object} task - Webhook task to execute
+     * @returns {Object} - Execution result
+     */
+    executeWebhookTask(task) {
+        const params = task.params || {};
+        
+        if (!params.url) {
+            throw new Error(`Webhook task ${task.name} has no URL specified`);
+        }
+        
+        try {
+            // Prepare request options
+            const options = {
+                method: params.method || 'GET',
+                url: params.url,
+                headers: params.headers || {},
+                timeout: params.timeout || 30000, // Default timeout: 30 seconds
+                followRedirect: params.followRedirect !== false
+            };
+            
+            // Add body for POST, PUT, PATCH methods
+            if (['POST', 'PUT', 'PATCH'].includes(options.method.toUpperCase()) && params.body) {
+                if (typeof params.body === 'string') {
+                    options.body = params.body;
+                } else {
+                    // If body is an object, stringify it as JSON and set proper content type
+                    options.body = JSON.stringify(params.body);
+                    if (!options.headers['Content-Type']) {
+                        options.headers['Content-Type'] = 'application/json';
+                    }
+                }
+            }
+            
+            // Make the request
+            console.log(`Executing webhook task ${task.name} to ${options.method} ${options.url}`);
+            const response = request(options);
+            
+            // Process response
+            const result = {
+                success: response.status >= 200 && response.status < 300,
+                type: 'webhook',
+                statusCode: response.status,
+                headers: response.headers,
+                body: response.body,
+                timings: response.timings
+            };
+            
+            // If the response indicates failure, throw an error
+            if (!result.success) {
+                throw new Error(`Webhook request failed with status ${response.status}: ${response.statusText}`);
+            }
+            
+            return result;
+        } catch (error) {
+            throw new Error(`Webhook execution failed: ${error.message}`);
+        }
+    },
+    
+    /**
+     * Execute an email task
+     * 
+     * @param {Object} task - Email task to execute
+     * @returns {Object} - Execution result
+     */
+    executeEmailTask(task) {
+        try {
+            const params = task.params || {};
+            
+            // Validate required fields
+            if (!params.to) {
+                throw new Error('Recipient (to) is required for email task');
+            }
+            
+            if (!params.subject) {
+                throw new Error('Subject is required for email task');
+            }
+            
+            if (!params.text && !params.html) {
+                throw new Error('Either text or html content is required for email task');
+            }
+            
+            // Check if email service is enabled
+            if (!this.context.configuration.emailEnabled) {
+                throw new Error('Email service is disabled in configuration');
+            }
+            
+            console.log(`Executing email task ${task.name} to ${Array.isArray(params.to) ? params.to.join(', ') : params.to}`);
+            
+            // Send email using email service
+            const result = emailService.send({
+                to: params.to,
+                from: params.from,
+                subject: params.subject,
+                text: params.text,
+                html: params.html,
+                cc: params.cc,
+                bcc: params.bcc,
+                replyTo: params.replyTo,
+                attachments: params.attachments,
+                provider: params.provider
+            });
+            
+            return {
+                success: true,
+                type: 'email',
+                messageId: result.messageId,
+                provider: result.provider,
+                recipients: Array.isArray(params.to) ? params.to : [params.to]
+            };
+        } catch (error) {
+            throw new Error(`Email task execution failed: ${error.message}`);
         }
     },
     
@@ -445,7 +606,8 @@ const scheduler = {
      * @param {Object} taskData - Task data
      * @param {string} taskData.name - Task name
      * @param {string} taskData.description - Task description
-     * @param {string} taskData.handler - Task handler script path
+     * @param {string} taskData.type - Task type (script, webhook, email, etc.)
+     * @param {string} taskData.handler - Task handler script path (for script type)
      * @param {Object} taskData.params - Task parameters
      * @param {string} taskData.schedule - Cron-like schedule expression or "now" for immediate execution
      * @param {boolean} taskData.recurring - Whether the task is recurring
@@ -457,6 +619,7 @@ const scheduler = {
         const { 
             name, 
             description, 
+            type = 'script', // Default type is script
             handler, 
             params, 
             schedule, 
@@ -464,6 +627,40 @@ const scheduler = {
             maxRetries = 0,
             retryDelay = 60000 // Default: 1 minute delay between retries
         } = taskData;
+        
+        // Validate task type
+        const validTypes = ['script', 'webhook', 'email'];
+        if (!validTypes.includes(type)) {
+            throw new Error(`Invalid task type: ${type}. Valid types are: ${validTypes.join(', ')}`);
+        }
+        
+        // Validate required fields based on type
+        if (type === 'script' && !handler) {
+            throw new Error('Handler path is required for script tasks');
+        }
+        
+        if (type === 'webhook') {
+            if (!params || !params.url) {
+                throw new Error('URL is required for webhook tasks');
+            }
+            if (!/^https?:\/\//i.test(params.url)) {
+                throw new Error('Invalid webhook URL. Must start with http:// or https://');
+            }
+        }
+        
+        if (type === 'email') {
+            if (!params || !params.to) {
+                throw new Error('Recipient (to) is required for email tasks');
+            }
+            
+            if (!params.subject) {
+                throw new Error('Subject is required for email tasks');
+            }
+            
+            if (!params.text && !params.html) {
+                throw new Error('Either text or html content is required for email tasks');
+            }
+        }
         
         try {
             // Check if a task with this name already exists
@@ -493,7 +690,8 @@ const scheduler = {
             const task = taskCollection.save({
                 name,
                 description,
-                handler,
+                type,
+                handler: type === 'script' ? handler : null,
                 params: params || {},
                 schedule,
                 scheduleType,
@@ -759,9 +957,10 @@ const scheduler = {
      * @param {string} status - New status
      * @param {number} duration - Execution duration
      * @param {string} error - Error message if any
+     * @param {Object} result - Execution result
      * @returns {boolean} - Success flag
      */
-    updateExecution(executionId, status, duration, error = null) {
+    updateExecution(executionId, status, duration, error = null, result = null) {
         try {
             if (!executionId) {
                 return false;
@@ -786,6 +985,7 @@ const scheduler = {
                         status,
                         duration,
                         error,
+                        result: result ? this.sanitizeResult(result) : null,
                         updatedAt: new Date().getTime()
                     };
                 }
@@ -799,7 +999,8 @@ const scheduler = {
                     status,
                     time: new Date().getTime(),
                     duration,
-                    error
+                    error,
+                    result: result ? this.sanitizeResult(result) : null
                 },
                 updatedAt: new Date().getTime()
             });
@@ -808,6 +1009,43 @@ const scheduler = {
         } catch (error) {
             console.error(`Error updating execution "${executionId}":`, error.message);
             return false;
+        }
+    },
+    
+    /**
+     * Sanitize task execution result for storage
+     * 
+     * @param {Object} result - Execution result
+     * @returns {Object} - Sanitized result
+     */
+    sanitizeResult(result) {
+        if (!result) return null;
+        
+        try {
+            // Convert result to JSON and back to strip any circular references
+            // or complex objects that can't be serialized
+            const sanitized = JSON.parse(JSON.stringify(result));
+            
+            // Limit result size to prevent document size issues
+            const resultJson = JSON.stringify(sanitized);
+            if (resultJson.length > 10000) { // Arbitrary limit to prevent huge results
+                return {
+                    truncated: true,
+                    type: result.type || 'unknown',
+                    summary: `Result was truncated (${resultJson.length} bytes)`,
+                    preview: resultJson.substring(0, 500) + '...'
+                };
+            }
+            
+            return sanitized;
+        } catch (error) {
+            // If the result can't be serialized, return a simplified version
+            console.error('Error sanitizing task result:', error.message);
+            return {
+                type: result.type || 'unknown',
+                error: 'Result could not be serialized for storage',
+                success: result.success !== false
+            };
         }
     },
     

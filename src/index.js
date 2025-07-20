@@ -2,6 +2,8 @@
  * Main entry point for Foxx service
  * 
  * Initializes the service and sets up middleware based on configuration
+ * 
+ * @author skitsanos
  */
 const builder = require('./builder/index');
 const rateLimiter = require('./builder/middleware/rate-limiter');

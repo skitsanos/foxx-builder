@@ -1,3 +1,10 @@
+/**
+ * Foxx service setup script
+ * 
+ * Initializes collections, indexes, and default data
+ * 
+ * @author skitsanos
+ */
 const { db } = require('@arangodb');
 
 // Initialize configuration

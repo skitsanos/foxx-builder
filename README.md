@@ -1,6 +1,7 @@
 # 🚀 Foxx Builder
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/skitsanos/foxx-builder/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/skitsanos/foxx-builder/tree/master)
+![CI/CD Pipeline](https://github.com/skitsanos/foxx-builder/workflows/CI/CD%20Pipeline/badge.svg)
+![Code Quality](https://github.com/skitsanos/foxx-builder/workflows/Code%20Quality/badge.svg)
 
 Build powerful database-driven microservices with **foxx-builder** – the modern, convention-based framework for ArangoDB Foxx.
 

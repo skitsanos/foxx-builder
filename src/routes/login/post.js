@@ -1,13 +1,15 @@
-const joi = require('joi');
-const {query, db, aql} = require('@arangodb');
-const crypto = require('@arangodb/crypto');/**
+/**
  * User Login Endpoint
  * 
  * Authenticates users and returns JWT token with user profile
  * Includes roles and permissions information
  * 
  * @version 2.0.0
+ * @author skitsanos
  */
+const joi = require('joi');
+const {query, db, aql} = require('@arangodb');
+const crypto = require('@arangodb/crypto');
 
 module.exports = {
     contentType: 'application/json',

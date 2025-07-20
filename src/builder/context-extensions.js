@@ -4,7 +4,7 @@
  * Extends the Foxx context with utility functions for common operations
  * 
  * @version 2.2.0
- * @author Skitsanos
+ * @author skitsanos
  */
 const {
     db,

@@ -5,6 +5,7 @@
  * of the previous filter-builder.js and rxq.js implementations.
  *
  * @version 1.0.0
+ * @author skitsanos
  */
 
 const queryBuilder = require('./query-builder');

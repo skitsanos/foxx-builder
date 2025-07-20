@@ -1,12 +1,17 @@
 /**
  * List Users Endpoint
- * 
+ *
  * Retrieves a paginated list of users with filtering options
  * Regular users can only see basic user info, admins see more details
- * 
+ *
  * @version 2.0.0
+ * @author skitsanos
  */
-const { time, db, aql } = require('@arangodb');
+const {
+    time,
+    db,
+    aql
+} = require('@arangodb');
 const joi = require('joi');
 
 /**
@@ -16,7 +21,15 @@ const joi = require('joi');
  */
 const parseString = inputString =>
 {
-    const stopWords = ['of', 'the', 'it', 'and', 'und', 'a', '-'];
+    const stopWords = [
+        'of',
+        'the',
+        'it',
+        'and',
+        'und',
+        'a',
+        '-'
+    ];
 
     const regex = /"[^"]+"|\S+/igu;
     const parsedInput = inputString.match(regex);
@@ -34,7 +47,7 @@ const parseString = inputString =>
  */
 module.exports = {
     name: 'List Users',
-    
+
     // Define query parameters for pagination and filtering
     params: {
         query: {
@@ -64,7 +77,7 @@ module.exports = {
             }
         }
     },
-    
+
     // Define possible errors
     error: [
         {'403': 'Access denied'},
@@ -73,17 +86,18 @@ module.exports = {
 
     /**
      * Handle request to list users
-     * 
+     *
      * @param {Object} req - Request object
      * @param {Object} res - Response object
      */
     handler: (req, res) =>
     {
         // Check if user is authenticated
-        if (!req.user) {
+        if (!req.user)
+        {
             return res.throw(403, 'Authentication required');
         }
-        
+
         const {filterBuilder} = module.context.queries;
         const isAdmin = req.user.roles && req.user.roles.includes('admin');
 
@@ -96,34 +110,41 @@ module.exports = {
             sortBy = 'createdOn',
             sortOrder = 'desc'
         } = req.queryParams;
-        
+
         // Validate and sanitize pagination parameters
         const validLimit = Math.min(parseInt(limit) || 25, 100);
         const validSkip = parseInt(skip) || 0;
-        
+
         // Parse search query
         const queryTokens = q ? parseString(q) : [];
-        let [filter, bindVars] = filterBuilder(queryTokens, 'user', ['username', 'email', 'firstName', 'lastName']);
-        
+        let [filter, bindVars] = filterBuilder(queryTokens, 'user', [
+            'username',
+            'email',
+            'firstName',
+            'lastName'
+        ]);
+
         // Add role filter if specified
-        let roleFilter = ''
-        if (role) {
+        let roleFilter = '';
+        if (role)
+        {
             roleFilter = `AND ${role} IN user.roles`;
         }
 
         const start = time();
-        
-        try {
+
+        try
+        {
             // Determine which fields to return based on user role
             const fieldsToReturn = isAdmin ?
-                `UNSET(user, "_rev", "_id", "password")` :
-                `KEEP(user, "_key", "username", "firstName", "lastName", "profileImage")`;
-            
+                                   `UNSET(user, "_rev", "_id", "password")` :
+                                   `KEEP(user, "_key", "username", "firstName", "lastName", "profileImage")`;
+
             // Determine sort field and direction
-            const sortField = sortBy === 'username' ? 'user.username' : 
-                             sortBy === 'lastLogin' ? 'user.lastLogin' : 'user.createdOn';
+            const sortField = sortBy === 'username' ? 'user.username' :
+                              sortBy === 'lastLogin' ? 'user.lastLogin' : 'user.createdOn';
             const sortDirection = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
-            
+
             // Main query with appropriate access control
             const [result] = db._query(`      
              LET skip=${validSkip}
@@ -147,11 +168,12 @@ module.exports = {
                     
             RETURN {data: ds, total, skip, limit: pageSize}          
             `, bindVars).toArray();
-            
+
             // For admin users, add role information to each user
-            if (isAdmin && result.data && result.data.length > 0) {
+            if (isAdmin && result.data && result.data.length > 0)
+            {
                 const userKeys = result.data.map(user => user._key);
-                
+
                 // Get role information for these users
                 const roleData = db._query(`
                     FOR user IN users
@@ -170,13 +192,14 @@ module.exports = {
                         roles: userRoles
                     }
                 `).toArray();
-                
+
                 // Create a map for quick lookup
                 const roleMap = {};
-                roleData.forEach(item => {
+                roleData.forEach(item =>
+                {
                     roleMap[item._key] = item.roles;
                 });
-                
+
                 // Add roles to each user in the result
                 result.data = result.data.map(user => ({
                     ...user,
@@ -190,10 +213,11 @@ module.exports = {
                     execTime: time() - start
                 }
             });
-        } catch (error) {
+        }
+        catch (error)
+        {
             console.error(`Error fetching users:`, error.message);
             res.throw(500, 'Error retrieving user data');
         }
-    }
     }
 };

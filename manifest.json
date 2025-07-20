@@ -17,6 +17,22 @@
       "type": "boolean",
       "description": "Whether to enable JWT authentication middleware"
     },
+    "emailProviders": {
+      "type": "json",
+      "default": {
+        "default": "resend",
+        "resend": {
+          "apiKey": "re_",
+          "defaultFrom": "Foxx Builder <noreply@example.com>"
+        }
+      },
+      "description": "Email provider configurations"
+    },
+    "emailEnabled": {
+      "default": false,
+      "type": "boolean",
+      "description": "Whether to enable email sending functionality"
+    },
     "jwtSecret": {
       "type": "string",
       "default": "SuperSecretWord"

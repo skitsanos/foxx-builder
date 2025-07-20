@@ -19,8 +19,56 @@ module.exports = {
         model: joi.object({
             name: joi.string().required().min(3).max(50),
             description: joi.string().required().max(200),
-            handler: joi.string().required(),
-            params: joi.object().optional(),
+            type: joi.string().valid('script', 'webhook', 'email').default('script'),
+            handler: joi.string().when('type', {
+                is: 'script',
+                then: joi.string().required(),
+                otherwise: joi.string().optional()
+            }),
+            params: joi.object().when('type', {
+                is: 'webhook',
+                then: joi.object({
+                    url: joi.string().uri().required(),
+                    method: joi.string().valid('GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD').default('GET'),
+                    headers: joi.object().optional(),
+                    body: joi.alternatives().try(joi.string(), joi.object()).optional(),
+                    timeout: joi.number().integer().min(1000).max(300000).default(30000),
+                    followRedirect: joi.boolean().default(true)
+                }).required(),
+                otherwise: joi.when('type', {
+                    is: 'email',
+                    then: joi.object({
+                        to: joi.alternatives().try(
+                            joi.string().email(),
+                            joi.array().items(joi.string().email())
+                        ).required(),
+                        from: joi.string().email().optional(),
+                        subject: joi.string().required(),
+                        text: joi.string(),
+                        html: joi.string(),
+                        cc: joi.alternatives().try(
+                            joi.string().email(),
+                            joi.array().items(joi.string().email())
+                        ).optional(),
+                        bcc: joi.alternatives().try(
+                            joi.string().email(),
+                            joi.array().items(joi.string().email())
+                        ).optional(),
+                        replyTo: joi.string().email().optional(),
+                        provider: joi.string().optional(),
+                        attachments: joi.array().items(joi.object()).optional()
+                    }).required().custom((value, helpers) => {
+                        if (!value.text && !value.html) {
+                            return helpers.error('object.missing', {
+                                peers: ['text', 'html'],
+                                peersWithLabels: ['text', 'html']
+                            });
+                        }
+                        return value;
+                    }),
+                    otherwise: joi.object().optional()
+                })
+            }),
             schedule: joi.alternatives().try(
                 joi.string().valid('now'),
                 joi.string().pattern(/^(\d+)\s+(\d+)\s+\*\s+\*\s+\*$/, 'daily schedule'),

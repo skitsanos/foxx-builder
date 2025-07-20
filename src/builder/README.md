@@ -6,7 +6,6 @@ The FoxxBuilder is the core component of the foxx-builder project. It provides a
 
 - Automatic route discovery and registration
 - Support for all HTTP methods
-- GraphQL integration
 - Parameter validation
 - Error handling
 - Context extensions
@@ -25,7 +24,6 @@ Routes are organized in the `src/routes` directory with the following convention
 
 - Each HTTP endpoint has its own file named after the HTTP method (e.g., `get.js`, `post.js`)
 - Path parameters are defined with the `$` prefix (e.g., `users/$id/get.js`)
-- GraphQL endpoints are defined with `graphql.js` files
 
 ## Route Handler Structure
 
@@ -81,27 +79,6 @@ module.exports = {
 };
 ```
 
-## GraphQL Support
-
-To define a GraphQL endpoint, create a `graphql.js` file with a `schema` property:
-
-```javascript
-const { GraphQLSchema, GraphQLObjectType, GraphQLString } = require('graphql');
-
-module.exports = {
-    schema: new GraphQLSchema({
-        query: new GraphQLObjectType({
-            name: 'Query',
-            fields: {
-                hello: {
-                    type: GraphQLString,
-                    resolve: () => 'Hello World!'
-                }
-            }
-        })
-    })
-};
-```
 
 ## Context Extensions
 

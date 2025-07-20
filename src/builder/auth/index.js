@@ -4,7 +4,7 @@
  * Provides robust JWT token handling with comprehensive validation
  * 
  * @version 1.1.0
- * @author Skitsanos
+ * @author skitsanos
  */
 const crypto = require('@arangodb/crypto');
 const joi = require('joi');

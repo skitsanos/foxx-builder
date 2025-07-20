@@ -16,11 +16,10 @@
     "list-services": "node tools/deploy.js list"
   },
   "dependencies": {
-    "graphql": "15.8.0"
   },
   "devDependencies": {
     "archiver": "^7.0.1",
-    "commander": "^13.1.0",
-    "form-data": "^4.0.2"
+    "commander": "^14.0.0",
+    "form-data": "^4.0.4"
   }
 }

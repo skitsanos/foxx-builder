@@ -2,22 +2,19 @@
  * ArangoDB Foxx Services Builder
  *
  * @version 2.0.0
- * @author Skitsanos, info@skitsanos.com, https://github.com/skitsanos
+ * @author skitsanos
  */
 const createRouter = require('@arangodb/foxx/router');
-const createGraphQLRouter = require('@arangodb/foxx/graphql');
-const graphql = require('graphql');
 const fs = require('fs');
 const path = require('path');
-const {graphqlSync} = require('graphql');
 
 /**
- * List of supported HTTP methods and GraphQL
+ * List of supported HTTP methods
  * @type {string[]}
  */
 const SUPPORTED_METHODS = [
     'all', 'get', 'post', 'put', 'delete', 
-    'patch', 'head', 'options', 'trace', 'graphql'
+    'patch', 'head', 'options', 'trace'
 ];
 
 /**
@@ -125,12 +122,8 @@ const foxxBuilder = {
             // Parse the route handler module
             const routeHandler = this.loadRouteHandler(filePath);
             
-            // Register the route based on method type
-            if (method === 'graphql') {
-                this.setupGraphQLEndpoint(routePath, routeHandler);
-            } else {
-                this.setupHttpEndpoint(routePath, method, routeHandler);
-            }
+            // Register the HTTP endpoint
+            this.setupHttpEndpoint(routePath, method, routeHandler);
         } catch (error) {
             console.error(`Error processing route file ${filePath}: ${error.message}`);
             // Continue processing other routes
@@ -183,47 +176,6 @@ const foxxBuilder = {
         }
     },
 
-    /**
-     * Setup a GraphQL endpoint
-     * 
-     * @param {string} routePath - The route path
-     * @param {object} routeHandler - The route handler module
-     */
-    setupGraphQLEndpoint(routePath, routeHandler) {
-        // Validate that schema is defined
-        if (!('schema' in routeHandler)) {
-            throw new Error(`GraphQL schema is not defined for ${routePath}`);
-        }
-
-        // Create and register the GraphQL router
-        try {
-            module.context.use(routePath, createGraphQLRouter({
-                graphql,
-                formatError: (error) => {
-                    return {
-                        meta: {
-                            platform: 'foxx-builder'
-                        },
-                        message: error.message,
-                        locations: error.locations,
-                        path: error.path
-                    };
-                },
-                executor: ({context, document, variables}) =>
-                    graphqlSync({
-                        schema: routeHandler.schema,
-                        contextValue: context,
-                        source: document,
-                        variableValues: variables
-                    }),
-                ...routeHandler
-            }));
-            
-            console.log(`Registered GraphQL endpoint: ${routePath}`);
-        } catch (error) {
-            throw new Error(`Failed to setup GraphQL endpoint ${routePath}: ${error.message}`);
-        }
-    },
 
     /**
      * Setup an HTTP endpoint for standard HTTP methods
