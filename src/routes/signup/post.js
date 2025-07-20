@@ -22,9 +22,7 @@ module.exports = {
             email: joi.string().email().required(),
             firstName: joi.string().optional(),
             lastName: joi.string().optional(),
-            acceptTerms: joi.boolean().valid(true).required().messages({
-                'any.only': 'You must accept the terms and conditions'
-            })
+            acceptTerms: joi.boolean().valid(true).required()
         }).required()
     },
 

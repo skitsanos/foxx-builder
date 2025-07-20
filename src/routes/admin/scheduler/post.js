@@ -25,59 +25,14 @@ module.exports = {
                 then: joi.string().required(),
                 otherwise: joi.string().optional()
             }),
-            params: joi.object().when('type', {
-                is: 'webhook',
-                then: joi.object({
-                    url: joi.string().uri().required(),
-                    method: joi.string().valid('GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD').default('GET'),
-                    headers: joi.object().optional(),
-                    body: joi.alternatives().try(joi.string(), joi.object()).optional(),
-                    timeout: joi.number().integer().min(1000).max(300000).default(30000),
-                    followRedirect: joi.boolean().default(true)
-                }).required(),
-                otherwise: joi.when('type', {
-                    is: 'email',
-                    then: joi.object({
-                        to: joi.alternatives().try(
-                            joi.string().email(),
-                            joi.array().items(joi.string().email())
-                        ).required(),
-                        from: joi.string().email().optional(),
-                        subject: joi.string().required(),
-                        text: joi.string(),
-                        html: joi.string(),
-                        cc: joi.alternatives().try(
-                            joi.string().email(),
-                            joi.array().items(joi.string().email())
-                        ).optional(),
-                        bcc: joi.alternatives().try(
-                            joi.string().email(),
-                            joi.array().items(joi.string().email())
-                        ).optional(),
-                        replyTo: joi.string().email().optional(),
-                        provider: joi.string().optional(),
-                        attachments: joi.array().items(joi.object()).optional()
-                    }).required().custom((value, helpers) => {
-                        if (!value.text && !value.html) {
-                            return helpers.error('object.missing', {
-                                peers: ['text', 'html'],
-                                peersWithLabels: ['text', 'html']
-                            });
-                        }
-                        return value;
-                    }),
-                    otherwise: joi.object().optional()
-                })
-            }),
+            params: joi.object().optional(),
             schedule: joi.alternatives().try(
                 joi.string().valid('now'),
-                joi.string().pattern(/^(\d+)\s+(\d+)\s+\*\s+\*\s+\*$/, 'daily schedule'),
-                joi.string().pattern(/^(\d+)\s+\*\s+\*\s+\*\s+\*$/, 'hourly schedule'),
-                joi.string().pattern(/^(\d+)\s+(\d+)\s+\*\s+\*\s+(\d+)$/, 'weekly schedule'),
-                joi.string().pattern(/^(\d+)\s+(\d+)\s+(\d+)\s+\*\s+\*$/, 'monthly schedule')
-            ).required().messages({
-                'alternatives.match': 'Invalid schedule format. Use cron syntax or "now".'
-            }),
+                joi.string().regex(/^(\d+)\s+(\d+)\s+\*\s+\*\s+\*$/),
+                joi.string().regex(/^(\d+)\s+\*\s+\*\s+\*\s+\*$/),
+                joi.string().regex(/^(\d+)\s+(\d+)\s+\*\s+\*\s+(\d+)$/),
+                joi.string().regex(/^(\d+)\s+(\d+)\s+(\d+)\s+\*\s+\*$/)
+            ).required(),
             recurring: joi.boolean().default(false),
             maxRetries: joi.number().integer().min(0).max(10).default(0)
                 .description('Maximum number of retry attempts (0 means no retries)'),

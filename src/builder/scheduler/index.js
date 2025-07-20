@@ -207,23 +207,41 @@ const scheduler = {
             // Clean up all existing scheduler-related tasks first
             try {
                 const allTasks = tasks.get();
-                const taskIds = Object.keys(allTasks);
+                let cleanedCount = 0;
                 
-                for (const taskId of taskIds) {
-                    const task = allTasks[taskId];
+                // Handle both array and object formats
+                const taskEntries = Array.isArray(allTasks) 
+                    ? allTasks.map((task, index) => [task.id || index, task])
+                    : Object.entries(allTasks);
+                
+                console.log(`Found ${taskEntries.length} total tasks, checking for scheduler tasks...`);
+                
+                for (const [taskId, task] of taskEntries) {
                     if (task.name && (task.name.includes('scheduler') || task.name === 'scheduler-task-runner' || task.name === 'scheduler-watchdog')) {
                         console.log(`Cleaning up existing scheduler task: ${taskId} (${task.name})`);
                         try {
                             tasks.unregister(taskId);
+                            cleanedCount++;
+                            console.log(`Successfully removed task ${taskId}`);
                         } catch (unregError) {
                             console.warn(`Failed to unregister task ${taskId}: ${unregError.message}`);
                         }
                     }
                 }
                 
-                console.log(`Cleaned up ${taskIds.filter(id => allTasks[id].name && allTasks[id].name.includes('scheduler')).length} scheduler-related tasks`);
+                console.log(`Cleaned up ${cleanedCount} scheduler-related tasks`);
+                
+                // Verify cleanup worked
+                const remainingTasks = tasks.get();
+                const remainingTaskEntries = Array.isArray(remainingTasks) 
+                    ? remainingTasks.filter(task => task.name && task.name.includes('scheduler'))
+                    : Object.values(remainingTasks).filter(task => task.name && task.name.includes('scheduler'));
+                    
+                if (remainingTaskEntries.length > 0) {
+                    console.warn(`Warning: ${remainingTaskEntries.length} scheduler tasks still remain after cleanup`);
+                }
             } catch (error) {
-                console.log('No existing scheduler tasks found or error during cleanup:', error.message);
+                console.log('Error during scheduler task cleanup:', error.message);
             }
             
             // Register the task runner with inline implementation

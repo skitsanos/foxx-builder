@@ -29,8 +29,6 @@ module.exports = {
                 is: joi.exist(),
                 then: joi.required(),
                 otherwise: joi.optional()
-            }).messages({
-                'any.only': 'Passwords do not match'
             }),
             preferences: joi.object().optional()
         }).required()
