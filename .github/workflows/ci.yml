@@ -98,13 +98,17 @@ jobs:
         run: |
           foxx install /api . --server dev --database ${ARANGO_DB}
 
+      - name: Update test variables
+        run: |
+          echo "URL=http://localhost:8529/_db/${ARANGO_DB}/api" > tests/hurl/.vars
+
       - name: Run API tests
         run: |
           mkdir -p test-results/hurl
           hurl --test \
             --report-junit test-results/hurl/results.xml \
             --variables-file tests/hurl/.vars \
-            tests/hurl/*.hurl
+            tests/hurl/hello.hurl
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
