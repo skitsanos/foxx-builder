@@ -118,10 +118,10 @@ jobs:
           path: test-results/
           retention-days: 30
 
-      - name: Publish test results
-        uses: dorny/test-reporter@v2
-        if: always()
-        with:
-          name: API Tests
-          path: test-results/hurl/results.xml
-          reporter: java-junit
+      # - name: Publish test results
+      #   uses: dorny/test-reporter@v2
+      #   if: always()
+      #   with:
+      #     name: API Tests
+      #     path: test-results/hurl/results.xml
+      #     reporter: java-junit
