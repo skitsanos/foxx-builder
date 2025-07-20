@@ -7,14 +7,11 @@
  */
 const builder = require('./builder/index');
 const rateLimiter = require('./builder/middleware/rate-limiter');
-const scheduler = require('./builder/scheduler');
 
 // Initialize the Foxx Builder
 builder.init();
 
-// Initialize the scheduler
-scheduler.init(module.context);
-console.log('Task scheduler initialized');
+// Note: Scheduler is initialized in setup.js to avoid duplicate registrations
 
 // Get configuration
 const { 

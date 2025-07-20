@@ -221,22 +221,18 @@ if (rolesCollection.count() === 0) {
 // Initialize scheduler service
 console.log('Initializing scheduler service...');
 try {
-    // Check if required collections exist
-    if (!db._collection('scheduledTasks')) {
-        console.error('scheduledTasks collection not found. Scheduler initialization failed.');
-    } else {
-        scheduler.init(module.context);
-        console.log('Scheduler service initialized successfully');
+    // The scheduler.init() method will create the collection if it doesn't exist
+    scheduler.init(module.context);
+    console.log('Scheduler service initialized successfully');
 
-        // Activate any tasks that should be running
-        const count = db._query(`
-            FOR task IN scheduledTasks
-            FILTER task.status IN ['active', 'retry-scheduled']
-            UPDATE task WITH { updatedAt: ${new Date().getTime()} } IN scheduledTasks
-            RETURN 1
-        `).toArray().length;
-        console.log(`Activated ${count} scheduled tasks`);
-    }
+    // Activate any tasks that should be running
+    const count = db._query(`
+        FOR task IN scheduledTasks
+        FILTER task.status IN ['active', 'retry-scheduled']
+        UPDATE task WITH { updatedAt: ${new Date().getTime()} } IN scheduledTasks
+        RETURN 1
+    `).toArray().length;
+    console.log(`Activated ${count} scheduled tasks`);
 } catch (error) {
     console.error(`Error initializing scheduler service: ${error.message}`);
 }

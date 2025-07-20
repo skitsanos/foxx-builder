@@ -163,21 +163,32 @@ const scheduler = {
         this.context = context;
         
         // Ensure the scheduledTasks collection exists
-        if (!db._collection('scheduledTasks')) {
-            console.warn('scheduledTasks collection not found. Creating it now.');
-            db._createDocumentCollection('scheduledTasks');
-            
-            // Create required indexes
-            const taskCollection = db._collection('scheduledTasks');
-            taskCollection.ensureIndex({ type: 'hash', fields: ['name'] });
-            taskCollection.ensureIndex({ type: 'skiplist', fields: ['nextRun'] });
-            taskCollection.ensureIndex({ type: 'hash', fields: ['status'] });
+        try {
+            if (!db._collection('scheduledTasks')) {
+                console.log('scheduledTasks collection not found. Creating it now.');
+                const collection = db._createDocumentCollection('scheduledTasks');
+                console.log(`Created scheduledTasks collection with key: ${collection._key}`);
+                
+                // Create required indexes
+                const taskCollection = db._collection('scheduledTasks');
+                taskCollection.ensureIndex({ type: 'hash', fields: ['name'] });
+                taskCollection.ensureIndex({ type: 'skiplist', fields: ['nextRun'] });
+                taskCollection.ensureIndex({ type: 'hash', fields: ['status'] });
+                console.log('Created indexes for scheduledTasks collection');
+            } else {
+                console.log('scheduledTasks collection already exists');
+            }
+        } catch (collectionError) {
+            console.error('Error creating scheduledTasks collection:', collectionError.message);
+            throw collectionError;
         }
         
         // Initialize email service
         emailService.init(context);
         
+        console.log('Setting up scheduler task runner...');
         this.setupTaskRunner();
+        console.log('Scheduler initialization completed');
         return this;
     },
     
@@ -196,12 +207,21 @@ const scheduler = {
             // Clean up all existing scheduler-related tasks first
             try {
                 const allTasks = tasks.get();
-                for (const taskId in allTasks) {
-                    if (taskId.includes('scheduler')) {
-                        console.log(`Cleaning up existing scheduler task: ${taskId}`);
-                        tasks.unregister(taskId);
+                const taskIds = Object.keys(allTasks);
+                
+                for (const taskId of taskIds) {
+                    const task = allTasks[taskId];
+                    if (task.name && (task.name.includes('scheduler') || task.name === 'scheduler-task-runner' || task.name === 'scheduler-watchdog')) {
+                        console.log(`Cleaning up existing scheduler task: ${taskId} (${task.name})`);
+                        try {
+                            tasks.unregister(taskId);
+                        } catch (unregError) {
+                            console.warn(`Failed to unregister task ${taskId}: ${unregError.message}`);
+                        }
                     }
                 }
+                
+                console.log(`Cleaned up ${taskIds.filter(id => allTasks[id].name && allTasks[id].name.includes('scheduler')).length} scheduler-related tasks`);
             } catch (error) {
                 console.log('No existing scheduler tasks found or error during cleanup:', error.message);
             }
@@ -258,15 +278,7 @@ const scheduler = {
             
             // Register a watchdog task that ensures the main task runner is active
             const watchdogTaskName = 'scheduler-watchdog';
-            try {
-                const existingWatchdog = tasks.get(watchdogTaskName);
-                if (existingWatchdog) {
-                    console.log('Unregistering existing scheduler watchdog');
-                    tasks.unregister(watchdogTaskName);
-                }
-            } catch (error) {
-                console.log('No existing scheduler watchdog found (expected for first install)');
-            }
+            // Note: Watchdog cleanup is handled in the general cleanup above
             
             tasks.register({
                 name: watchdogTaskName,
@@ -276,14 +288,21 @@ const scheduler = {
                         // Import tasks module inside the function
                         const tasksModule = require('@arangodb/tasks');
                         
-                        // Check if the main task runner exists
+                        // Check if the main task runner exists by looking for any active task with the correct name
                         try {
-                            tasksModule.get('scheduler-task-runner');
-                            // Task exists, all good
+                            const allTasks = tasksModule.get();
+                            const taskRunners = Object.keys(allTasks).filter(id => 
+                                allTasks[id].name === 'scheduler-task-runner'
+                            );
+                            
+                            if (taskRunners.length === 0) {
+                                console.warn('Scheduler task runner not found. Watchdog detected missing task runner.');
+                            } else if (taskRunners.length > 1) {
+                                console.warn(`Multiple scheduler task runners found (${taskRunners.length}). This may cause conflicts.`);
+                            }
+                            // If exactly 1 task runner exists, everything is fine
                         } catch (taskNotFoundError) {
-                            console.warn('Scheduler task runner not found. Watchdog detected missing task runner.');
-                            // Note: Re-registration would need to be handled differently
-                            // For now, just log the issue
+                            console.warn('Error checking scheduler task runner:', taskNotFoundError.message);
                         }
                     } catch (error) {
                         console.error('Error in scheduler watchdog:', error.message);
