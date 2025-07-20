@@ -25,10 +25,10 @@ jobs:
           # Create backup directory for volume mounting
           mkdir -p .backup
           
-          # Run ArangoDB container
+          # Run ArangoDB container with host network
           docker run \
             --name arangodb-dev \
-            -p 8529:8529 \
+            --network host \
             -e ARANGO_ROOT_PASSWORD=${ARANGO_ROOT_PASSWORD} \
             -v $(pwd)/.backup:/backup \
             -d arangodb/arangodb:latest
