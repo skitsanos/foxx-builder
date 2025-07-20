@@ -205,15 +205,18 @@ const scheduler = {
                 console.log('No existing scheduler task runner found (expected for first install)');
             }
             
+            // Store reference to scheduler for task runner
+            const schedulerInstance = this;
+            
             // Register the task runner
             tasks.register({
                 name: 'scheduler-task-runner',
                 period: checkInterval,
                 offset: 5, // Small offset to avoid potential timing issues
-                command: () => {
+                command: function() {
                     try {
                         const startTime = new Date().getTime();
-                        this.processDueTasks();
+                        schedulerInstance.processDueTasks();
                         const duration = new Date().getTime() - startTime;
                         
                         if (duration > checkInterval * 500) { // If processing takes more than half the check interval
@@ -242,12 +245,12 @@ const scheduler = {
             tasks.register({
                 name: watchdogTaskName,
                 period: 300, // Check every 5 minutes
-                command: () => {
+                command: function() {
                     try {
                         // Check if the main task runner exists
                         if (!tasks.get('scheduler-task-runner')) {
                             console.warn('Scheduler task runner not found, re-registering...');
-                            this.setupTaskRunner(checkInterval);
+                            schedulerInstance.setupTaskRunner(checkInterval);
                         }
                     } catch (error) {
                         console.error('Error in scheduler watchdog:', error.message);
