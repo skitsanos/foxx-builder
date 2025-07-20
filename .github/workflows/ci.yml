@@ -24,11 +24,6 @@ jobs:
           - 8529:8529
         env:
           ARANGO_ROOT_PASSWORD: openSesame
-        options: >-
-          --health-cmd "curl -f http://localhost:8529/_api/version || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
 
     steps:
       - name: Checkout repository
@@ -52,17 +47,21 @@ jobs:
 
       - name: Wait for ArangoDB
         run: |
-          max_wait=90
-          delay=1
+          max_wait=120
+          delay=2
           total=0
           
           echo "Waiting for ArangoDB to be ready..."
           while [ $total -le $max_wait ]; do
             if curl -f http://localhost:8529/_api/version > /dev/null 2>&1; then
               echo "ArangoDB is ready!"
-              break
+              echo "Testing connection with credentials..."
+              if curl -f -u "root:${ARANGO_ROOT_PASSWORD}" http://localhost:8529/_api/version > /dev/null 2>&1; then
+                echo "ArangoDB authentication working!"
+                break
+              fi
             fi
-            echo "Wait ${total}s"
+            echo "Wait ${total}s / ${max_wait}s"
             total=$((total + delay))
             sleep $delay
           done
