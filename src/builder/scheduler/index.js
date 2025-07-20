@@ -247,8 +247,13 @@ const scheduler = {
                 period: 300, // Check every 5 minutes
                 command: function() {
                     try {
+                        // Import tasks module inside the function
+                        const tasksModule = require('@arangodb/tasks');
+                        
                         // Check if the main task runner exists
-                        if (!tasks.get('scheduler-task-runner')) {
+                        try {
+                            tasksModule.get('scheduler-task-runner');
+                        } catch (taskNotFoundError) {
                             console.warn('Scheduler task runner not found, re-registering...');
                             schedulerInstance.setupTaskRunner(checkInterval);
                         }
