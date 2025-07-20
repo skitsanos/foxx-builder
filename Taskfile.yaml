@@ -17,7 +17,7 @@ vars:
   API_ENDPOINT_PROD: /api
 
   # Testing configuration
-  HURL: hurl --variables-file ./.api-test/.vars
+  HURL: hurl --variables-file ./tests/hurl/.vars
   HURL_TEST_URL: --variable URL=http://localhost:8529/_db/{{.DATABASE_NAME}}{{.API_ENDPOINT_DEV}}
 
   # Docker configuration
@@ -27,9 +27,9 @@ vars:
   DOCKER_CREDENTIALS: --server.username {{.DOCKER_ROOT_USERNAME}} --server.password {{.DOCKER_ROOT_PASSWORD}}
 
   # Deployment tool configuration
-  DEPLOY_TOOL: node tools/deploy.js
-  DEPLOY_ARGS_DOCKER: -H {{.SERVER_HOST}}:{{.DOCKER_BIND_PORT}} -d {{.DATABASE_NAME}} -u {{.DOCKER_ROOT_USERNAME}} -p {{.DOCKER_ROOT_PASSWORD}}
-  DEPLOY_ARGS_DEV: -H {{.SERVER_HOST}}:8529 -d {{.DATABASE_NAME}} -u dev -p sandbox
+  DEPLOY_TOOL: foxx
+  DEPLOY_SERVER_DOCKER: dev
+  DEPLOY_SERVER_DEV: dev
 
   # Console colors for better readability
   RED: "\e[31m"
@@ -122,7 +122,7 @@ tasks:
           echo -e "\n{{.BLUE}}Running API tests{{.ENDCOLOR}}"
       - cmd: |
           echo -e "\n{{.BLUE}}Testing {hello}{{.ENDCOLOR}}"
-          {{.HURL}} {{.HURL_TEST_URL}} ./.api-test/hello.hurl
+          {{.HURL}} {{.HURL_TEST_URL}} ./tests/hurl/hello.hurl
 
   #
   # Run a specific API test by name
@@ -132,7 +132,7 @@ tasks:
     cmds:
       - cmd: |
           read -p "{{.BLUE}}API Test to run:{{.ENDCOLOR}}" TEST_TO_RUN
-          {{.HURL}} {{.HURL_TEST_URL}} "./.api-test/${TEST_TO_RUN}.hurl"
+          {{.HURL}} {{.HURL_TEST_URL}} "./tests/hurl/${TEST_TO_RUN}.hurl"
           echo -e "{{.ENDCOLOR}}\n"
 
   #
@@ -143,7 +143,7 @@ tasks:
     cmds:
       - cmd: |
           echo -e "{{.BLUE}}Listing Foxx services in Docker...{{.ENDCOLOR}}"
-          {{.DEPLOY_TOOL}} list {{.DEPLOY_ARGS_DOCKER}}
+          {{.DEPLOY_TOOL}} list --server {{.DEPLOY_SERVER_DOCKER}} --database {{.DATABASE_NAME}}
 
   #
   # Deploy a development version to Docker
@@ -156,15 +156,15 @@ tasks:
           echo -e "{{.BLUE}}Checking if service exists at {{.API_ENDPOINT_DEV}}...{{.ENDCOLOR}}"
           
           # Get the list of services
-          SERVICES=$({{.DEPLOY_TOOL}} list {{.DEPLOY_ARGS_DOCKER}})
+          SERVICES=$({{.DEPLOY_TOOL}} list --server {{.DEPLOY_SERVER_DOCKER}} --database {{.DATABASE_NAME}})
           
           # Check if our service is already installed
           if echo "$SERVICES" | grep -q "{{.API_ENDPOINT_DEV}}"; then
             echo -e "{{.BLUE}}Replacing service at {{.API_ENDPOINT_DEV}} endpoint{{.ENDCOLOR}}"
-            {{.DEPLOY_TOOL}} replace {{.DEPLOY_ARGS_DOCKER}} -m {{.API_ENDPOINT_DEV}}
+            {{.DEPLOY_TOOL}} replace {{.API_ENDPOINT_DEV}} . --server {{.DEPLOY_SERVER_DOCKER}} --database {{.DATABASE_NAME}}
           else
             echo -e "{{.BLUE}}Installing service at {{.API_ENDPOINT_DEV}} endpoint{{.ENDCOLOR}}"
-            {{.DEPLOY_TOOL}} install {{.DEPLOY_ARGS_DOCKER}} -m {{.API_ENDPOINT_DEV}}
+            {{.DEPLOY_TOOL}} install {{.API_ENDPOINT_DEV}} . --server {{.DEPLOY_SERVER_DOCKER}} --database {{.DATABASE_NAME}}
           fi
           echo -e "{{.GREEN}}Deployment to Docker completed successfully{{.ENDCOLOR}}"
 

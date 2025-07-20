@@ -194,10 +194,15 @@ const scheduler = {
             }
             
             // Check if the task runner is already registered
-            const existingTask = tasks.get('scheduler-task-runner');
-            if (existingTask) {
-                console.log('Unregistering existing scheduler task runner');
-                tasks.unregister('scheduler-task-runner');
+            try {
+                const existingTask = tasks.get('scheduler-task-runner');
+                if (existingTask) {
+                    console.log('Unregistering existing scheduler task runner');
+                    tasks.unregister('scheduler-task-runner');
+                }
+            } catch (error) {
+                // Task doesn't exist, which is fine for first-time setup
+                console.log('No existing scheduler task runner found (expected for first install)');
             }
             
             // Register the task runner
@@ -224,9 +229,14 @@ const scheduler = {
             
             // Register a watchdog task that ensures the main task runner is active
             const watchdogTaskName = 'scheduler-watchdog';
-            const existingWatchdog = tasks.get(watchdogTaskName);
-            if (existingWatchdog) {
-                tasks.unregister(watchdogTaskName);
+            try {
+                const existingWatchdog = tasks.get(watchdogTaskName);
+                if (existingWatchdog) {
+                    console.log('Unregistering existing scheduler watchdog');
+                    tasks.unregister(watchdogTaskName);
+                }
+            } catch (error) {
+                console.log('No existing scheduler watchdog found (expected for first install)');
             }
             
             tasks.register({

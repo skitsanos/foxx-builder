@@ -103,8 +103,8 @@ jobs:
           mkdir -p test-results/hurl
           hurl --test \
             --report-junit test-results/hurl/results.xml \
-            --variables-file .api-test/.vars \
-            .api-test/*.hurl
+            --variables-file tests/hurl/.vars \
+            tests/hurl/*.hurl
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

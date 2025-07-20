@@ -3,7 +3,7 @@
 #
 GET {{URL}}/users
 
-HTTP/* *
+HTTP *
 
 
 #
@@ -14,14 +14,14 @@ POST {{URL}}/signup
     "username": "demo@nowhere.local",
     "password": "demo"
 }
-HTTP/* *
+HTTP *
 
 POST {{URL}}/signup
 {
     "username": "demo2@nowhere.local",
     "password": "demo"
 }
-HTTP/* *
+HTTP *
 
 #
 # Login to get a token
@@ -31,7 +31,7 @@ POST {{URL}}/login
     "username": "demo@nowhere.local",
     "password": "demo"
 }
-HTTP/* *
+HTTP *
 [Asserts]
 status == 200
 jsonpath "$.result.session.token" != null
@@ -40,7 +40,7 @@ TOKEN: jsonpath "$.result.session.token"
 
 GET {{URL}}/users?q=AND+username%3Fdemo2
 Authorization: Bearer {{TOKEN}}
-HTTP/* *
+HTTP *
 
 #[Asserts]
 #status == 200

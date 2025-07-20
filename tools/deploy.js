@@ -91,7 +91,17 @@ async function createServiceZip(serviceDir, outputPath) {
                     '.idea/**',
                     '.github/**',
                     '.netlify/**',
-                    '*.zip'
+                    '.claude/**',
+                    'tools/**/*.zip',
+                    '*.zip',
+                    'development_notes/**',
+                    'examples/**',
+                    'docs/**',
+                    'articles/**',
+                    'tests/**',
+                    'bun.lock',
+                    'package-lock.json',
+                    'yarn.lock'
                 ]
             });
             
@@ -110,14 +120,14 @@ async function createFormData(zipPath) {
     try {
         // Try to use the FormData from Node.js fetch API (Node 18+)
         formData = new FormData();
-        formData.append('service', createReadStream(zipPath));
+        formData.append('source', createReadStream(zipPath));
         return formData;
     } catch (e) {
         // If global FormData is not available, try to use form-data package
         try {
             const FormData = require('form-data');
             formData = new FormData();
-            formData.append('service', createReadStream(zipPath));
+            formData.append('source', createReadStream(zipPath));
             return formData;
         } catch (err) {
             throw new Error('Unable to create FormData. For Node.js versions prior to 18, please install the "form-data" package.');
@@ -135,7 +145,7 @@ async function installService(options) {
         const formData = await createFormData(zipPath);
         const hasGetHeaders = typeof formData.getHeaders === 'function';
         
-        const url = `${host}/_db/${database}/_api/foxx/service?mount=${encodeURIComponent(mountPoint)}`;
+        const url = `${host}/_db/${database}/_api/foxx?mount=${encodeURIComponent(mountPoint)}`;
         const authHeader = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
         
         const headers = {
@@ -181,7 +191,7 @@ async function replaceService(options) {
         const formData = await createFormData(zipPath);
         const hasGetHeaders = typeof formData.getHeaders === 'function';
         
-        const url = `${host}/_db/${database}/_api/foxx/service/${encodeURIComponent(mountPoint)}`;
+        const url = `${host}/_db/${database}/_api/foxx${mountPoint}`;
         const authHeader = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
         
         const headers = {

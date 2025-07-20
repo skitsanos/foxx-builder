@@ -1,0 +1,92 @@
+name: Deploy to Production
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  SERVICE_NAME: foxx-api
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Create deployment package
+        run: |
+          # Create a clean deployment package
+          mkdir -p dist
+          
+          # Copy necessary files (excluding dev dependencies and test files)
+          cp -r src/ dist/
+          cp manifest.json dist/
+          cp package.json dist/
+          cp README.md dist/
+          
+          # Create archive
+          cd dist
+          zip -r ../foxx-service-$(date +%Y%m%d-%H%M%S).zip .
+          cd ..
+
+      - name: Deploy to ArangoDB
+        run: |
+          # Use the deployment tool to deploy the service
+          node tools/deploy.js replace \
+            --host "${{ secrets.ARANGO_HOST }}" \
+            --database "${{ secrets.ARANGO_DATABASE }}" \
+            --username "${{ secrets.ARANGO_USERNAME }}" \
+            --password "${{ secrets.ARANGO_PASSWORD }}" \
+            --mount-point "/api" \
+            --zip-file foxx-service-*.zip
+
+      - name: Health check
+        run: |
+          # Wait a moment for deployment to complete
+          sleep 5
+          
+          # Check if the service is responding
+          curl -f "${{ secrets.ARANGO_HOST }}/api/health" || exit 1
+          echo "Service deployment successful and healthy!"
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            ## Changes
+            
+            ${{ github.event.head_commit.message }}
+            
+            ## Deployment
+            
+            Service deployed to: ${{ secrets.ARANGO_HOST }}/api
+            
+          draft: false
+          prerelease: false
