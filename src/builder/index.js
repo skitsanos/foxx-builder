@@ -1,7 +1,8 @@
 /**
  * ArangoDB Foxx Services Builder
+ * V2 Architecture - src/routes structure only
  *
- * @version 2.0.0
+ * @version 2.4.0
  * @author skitsanos
  */
 const createRouter = require('@arangodb/foxx/router');
@@ -19,30 +20,22 @@ const SUPPORTED_METHODS = [
 
 /**
  * Determines the base directory for services
- * Checks for compatibility with v1 and v2 paths
+ * Uses v2 path structure only
  * 
  * @returns {string} The path to services directory
- * @throws {Error} If neither v1 nor v2 paths exist
+ * @throws {Error} If v2 path doesn't exist
  */
 const getServicesBase = () => {
-    // Check for v1 path (legacy)
-    const v1Path = path.join(module.context.basePath, 'foxx');
-    if (fs.exists(v1Path)) {
-        console.log(`Using v1 services path: ${v1Path}`);
-        return v1Path;
+    const servicesPath = path.join(module.context.basePath, 'src', 'routes');
+    
+    if (!fs.exists(servicesPath)) {
+        const error = `Services directory not found: ${servicesPath}`;
+        console.error(error);
+        throw new Error(error);
     }
 
-    // Check for v2 path (current)
-    const v2Path = path.join(module.context.basePath, 'src', 'routes');
-    if (fs.exists(v2Path)) {
-        console.log(`Using v2 services path: ${v2Path}`);
-        return v2Path;
-    }
-
-    // Neither path exists
-    const error = 'Failed to setup services base: neither v1 nor v2 paths exist';
-    console.error(error);
-    throw new Error(error);
+    console.log(`Using services path: ${servicesPath}`);
+    return servicesPath;
 };
 
 /**

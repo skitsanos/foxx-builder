@@ -33,13 +33,11 @@ module.exports = {
             params: joi.object().optional(),
             schedule: joi.alternatives().try(
                 joi.string().valid('now'),
-                joi.string().pattern(/^(\d+)\s+(\d+)\s+\*\s+\*\s+\*$/, 'daily schedule'),
-                joi.string().pattern(/^(\d+)\s+\*\s+\*\s+\*\s+\*$/, 'hourly schedule'),
-                joi.string().pattern(/^(\d+)\s+(\d+)\s+\*\s+\*\s+(\d+)$/, 'weekly schedule'),
-                joi.string().pattern(/^(\d+)\s+(\d+)\s+(\d+)\s+\*\s+\*$/, 'monthly schedule')
-            ).optional().messages({
-                'alternatives.match': 'Invalid schedule format. Use cron syntax or "now".'
-            }),
+                joi.string().regex(/^(\d+)\s+(\d+)\s+\*\s+\*\s+\*$/),
+                joi.string().regex(/^(\d+)\s+\*\s+\*\s+\*\s+\*$/),
+                joi.string().regex(/^(\d+)\s+(\d+)\s+\*\s+\*\s+(\d+)$/),
+                joi.string().regex(/^(\d+)\s+(\d+)\s+(\d+)\s+\*\s+\*$/)
+            ).optional(),
             recurring: joi.boolean().optional(),
             maxRetries: joi.number().integer().min(0).max(10).optional()
                 .description('Maximum number of retry attempts (0 means no retries)'),

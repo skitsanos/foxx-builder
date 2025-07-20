@@ -21,7 +21,7 @@ const queryCache = new Map();
  * Default cache TTL in milliseconds (5 minutes)
  * @type {number}
  */
-const DEFAULT_CACHE_TTL = 5 * 60 * 1000;
+let DEFAULT_CACHE_TTL = 5 * 60 * 1000;
 
 /**
  * Validates collection name and ensures it exists

@@ -39,7 +39,7 @@ module.exports = {
                 service: manifest.name,
                 version: manifest.version,
                 timestamp: new Date().toISOString(),
-                uptime: process.uptime(),
+                uptime: Date.now() - start,
                 execTime: time() - start
             };
             

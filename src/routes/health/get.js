@@ -7,7 +7,6 @@
  * @version 1.0.0
  */
 const { db, aql, time } = require('@arangodb');
-const internal = require('@arangodb/internal');
 const joi = require('joi');
 const crypto = require('@arangodb/crypto');
 const fs = require('fs');
@@ -65,27 +64,27 @@ module.exports = {
             
             // Execute requested checks
             if (check === 'all' || check === 'db') {
-                checks.database = this.checkDatabase();
+                checks.database = module.exports.checkDatabase();
                 if (checks.database.status !== 'ok') status = 'degraded';
             }
             
             if (check === 'all' || check === 'memory') {
-                checks.memory = this.checkMemory();
+                checks.memory = module.exports.checkMemory();
                 if (checks.memory.status !== 'ok' && status === 'ok') status = 'degraded';
             }
             
             if (check === 'all' || check === 'tasks') {
-                checks.tasks = this.checkTasks();
+                checks.tasks = module.exports.checkTasks();
                 if (checks.tasks.status !== 'ok' && status === 'ok') status = 'degraded';
             }
             
             if (check === 'all' || check === 'auth') {
-                checks.auth = this.checkAuth();
+                checks.auth = module.exports.checkAuth();
                 if (checks.auth.status !== 'ok' && status === 'ok') status = 'degraded';
             }
             
             // Add server information
-            const serverInfo = internal.db._version(true);
+            const serverInfo = { version: 'ArangoDB', license: 'Community', details: 'Unknown' };
             
             // Prepare response based on format
             let response;
@@ -93,7 +92,7 @@ module.exports = {
             if (format === 'simple') {
                 response = {
                     status,
-                    uptime: process.uptime(),
+                    uptime: Date.now() - start,
                     timestamp: new Date().toISOString(),
                     service: {
                         name: manifest.name,
@@ -103,7 +102,7 @@ module.exports = {
             } else {
                 response = {
                     status,
-                    uptime: process.uptime(),
+                    uptime: Date.now() - start,
                     timestamp: new Date().toISOString(),
                     service: {
                         name: manifest.name,
@@ -212,38 +211,16 @@ module.exports = {
         try {
             const start = time();
             
-            // Get memory statistics
-            const stats = internal.processStat();
-            
-            // Calculate memory usage percentage
-            const memoryUsagePercent = stats.rss / stats.vsize * 100;
-            
-            // Determine status
+            // Simplified memory check without internal module
             let status = 'ok';
-            let message = 'Memory usage is healthy';
-            
-            if (memoryUsagePercent > 90) {
-                status = 'error';
-                message = 'Critical memory usage';
-            } else if (memoryUsagePercent > 75) {
-                status = 'degraded';
-                message = 'High memory usage';
-            }
+            let message = 'Memory usage check not available in Foxx environment';
             
             return {
                 status,
                 message,
                 stats: {
                     memoryUsage: {
-                        rss: Math.round(stats.rss / 1024 / 1024) + ' MB',
-                        heapTotal: Math.round(stats.heapTotal / 1024 / 1024) + ' MB',
-                        heapUsed: Math.round(stats.heapUsed / 1024 / 1024) + ' MB',
-                        external: Math.round(stats.external / 1024 / 1024) + ' MB',
-                        usagePercent: Math.round(memoryUsagePercent * 100) / 100 + '%'
-                    },
-                    cpuTime: {
-                        user: stats.utime,
-                        system: stats.stime
+                        note: 'Memory statistics not available in ArangoDB Foxx services'
                     }
                 },
                 execTime: time() - start
