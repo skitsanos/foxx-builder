@@ -3,3 +3,6 @@
 development_notes/
 /node_modules/
 *.lock
+.backup/
+.netlify/
+test-results/
