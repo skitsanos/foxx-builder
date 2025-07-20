@@ -62,14 +62,10 @@ jobs:
           docker logs arangodb-dev | tail -10
           
           while [ $total -le $max_wait ]; do
-            echo "Testing connection to localhost:8529..."
-            if curl -f http://localhost:8529/_api/version 2>&1; then
-              echo "ArangoDB is ready!"
-              echo "Testing connection with credentials..."
-              if curl -f -u "root:${ARANGO_ROOT_PASSWORD}" http://localhost:8529/_api/version 2>&1; then
-                echo "ArangoDB authentication working!"
-                break
-              fi
+            echo "Testing connection to localhost:8529 with credentials..."
+            if curl -f -u "root:${ARANGO_ROOT_PASSWORD}" http://localhost:8529/_api/version > /dev/null 2>&1; then
+              echo "ArangoDB is ready and authentication working!"
+              break
             else
               echo "Connection failed, checking container status..."
               docker ps -a | grep arangodb-dev
