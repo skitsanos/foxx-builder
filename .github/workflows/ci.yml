@@ -16,18 +16,23 @@ env:
 jobs:
   api-test:
     runs-on: ubuntu-latest
-    
-    services:
-      arangodb:
-        image: arangodb/arangodb:3.12
-        ports:
-          - 8529:8529
-        env:
-          ARANGO_ROOT_PASSWORD: openSesame
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Start ArangoDB
+        run: |
+          # Create backup directory for volume mounting
+          mkdir -p .backup
+          
+          # Run ArangoDB container
+          docker run \
+            --name arangodb-dev \
+            -p 8529:8529 \
+            -e ARANGO_ROOT_PASSWORD=${ARANGO_ROOT_PASSWORD} \
+            -v $(pwd)/.backup:/backup \
+            -d arangodb/arangodb:${ARANGO_VERSION}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -73,21 +78,11 @@ jobs:
 
       - name: Setup Database
         run: |
-          # Create database and user
-          curl -X POST \
-            -H "Content-Type: application/json" \
-            -u "root:${ARANGO_ROOT_PASSWORD}" \
-            -d '{
-              "name": "'${ARANGO_DB}'",
-              "users": [
-                {
-                  "username": "'${ARANGO_USER}'",
-                  "passwd": "'${ARANGO_PASSWORD}'",
-                  "active": true
-                }
-              ]
-            }' \
-            "http://localhost:8529/_api/database"
+          # Create database and user using arangosh
+          docker exec arangodb-dev arangosh \
+            --server.username root \
+            --server.password ${ARANGO_ROOT_PASSWORD} \
+            --javascript.execute-string "db._createDatabase('${ARANGO_DB}',{},[{username: '${ARANGO_USER}', passwd: '${ARANGO_PASSWORD}', active: true}]);"
 
       - name: Register Foxx API services
         run: |
