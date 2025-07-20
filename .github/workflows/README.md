@@ -52,10 +52,12 @@ This directory contains GitHub Actions workflows for the foxx-builder project.
 **Purpose:** Ensures code quality, security, and documentation standards
 
 **Jobs:**
-- **Lint:** Code style and formatting checks
+- **Code Checks:** Basic code quality checks (TODO/FIXME, console.log, secrets detection)
 - **Security:** Security vulnerability scanning
 - **Documentation:** Documentation completeness checks
 - **Dependencies:** Dependency health and update checks
+
+**Note:** ESLint has been removed as it's considered outdated technology for this project.
 
 ## Setup Instructions
 
@@ -90,7 +92,7 @@ Recommended branch protection for `master`/`main`:
 3. Enable:
    - Require status checks to pass
    - Require branches to be up to date
-   - Required status checks: `api-test`, `lint`, `security`
+   - Required status checks: `api-test`, `code-checks`, `security`
    - Require pull request reviews
 
 ## Workflow Status Badges
@@ -116,7 +118,7 @@ foxx server set local http://root:password@localhost:8529
 foxx install /api . --server local --database _system
 
 # Run API tests
-hurl --test --variables-file .api-test/.vars .api-test/*.hurl
+hurl --test --variables-file tests/hurl/.vars tests/hurl/*.hurl
 ```
 
 ## Troubleshooting

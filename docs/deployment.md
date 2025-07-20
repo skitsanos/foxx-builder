@@ -1,10 +1,70 @@
 # Foxx Microservice Deployment
 
-There are several ways to deploy Foxx microservices to ArangoDB. This document outlines the available methods with a focus on alternatives to using `foxx-cli`.
+There are several ways to deploy Foxx microservices to ArangoDB. This document outlines the available methods for local development, testing, and production deployments.
 
 ## Deployment Options
 
-### 1. Using the Deployment Tool (Recommended)
+### 1. Local Development with Taskfile (Recommended)
+
+For local development, use the built-in Taskfile commands that provide a streamlined workflow:
+
+```bash
+# Setup ArangoDB Docker container and database
+task docker-db-setup
+
+# Deploy your service
+task deploy-docker
+
+# Run API tests
+task test
+
+# List installed services
+task list-services
+
+# Create database backup
+task docker-db-backup
+
+# Restore database from backup  
+task docker-db-restore
+```
+
+The Taskfile commands use `foxx-cli` internally for reliable deployments and handle all the container networking and authentication automatically.
+
+### 2. Production Deployment with GitHub Actions
+
+For production deployments, the project includes GitHub Actions workflows:
+
+- **Automatic Deployment**: Push git tags (e.g., `v1.0.0`) to trigger production deployment
+- **Manual Deployment**: Use the workflow dispatch feature for staging deployments
+- **Health Checks**: Automatic service health verification after deployment
+
+Configure deployment secrets in your GitHub repository:
+```
+ARANGO_HOST=https://your-arangodb-server.com
+ARANGO_DATABASE=your_database_name  
+ARANGO_USERNAME=your_deployment_user
+ARANGO_PASSWORD=your_deployment_password
+```
+
+### 3. Using foxx-cli Directly
+
+For manual deployments, use the standard foxx-cli tool:
+
+```bash
+# Register your ArangoDB server
+foxx server set dev http://dev:sandbox@localhost:8529
+
+# Install the service
+foxx install /api . --server dev --database dev
+
+# Replace an existing service
+foxx replace /api . --server dev --database dev
+
+# Uninstall a service
+foxx uninstall /api --server dev --database dev
+```
+
+### 4. Using the Custom Deployment Tool
 
 The `foxx-builder` includes a deployment tool to simplify deployment without `foxx-cli`:
 

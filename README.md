@@ -187,7 +187,33 @@ module.exports = {
 };
 ```
 
-## Docker Development
+## Local Development
+
+### Using Taskfile (Recommended)
+
+The easiest way to develop locally is using the built-in Taskfile commands:
+
+```bash
+# Setup ArangoDB Docker container and database
+task docker-db-setup
+
+# Deploy your service
+task deploy-docker
+
+# Run API tests
+task test
+
+# List installed services
+task list-services
+
+# Create database backup
+task docker-db-backup
+
+# Restore database from backup
+task docker-db-restore
+```
+
+### Manual Docker Development
 
 Run your services in Docker for consistent development environments:
 
@@ -219,7 +245,7 @@ jsonpath "$.user.name" == "John Doe"
 Run tests with:
 
 ```bash
-hurl --test --variables-file .api-test/.vars .api-test/*.hurl
+hurl --test --variables-file tests/hurl/.vars tests/hurl/*.hurl
 ```
 
 ## Integrations

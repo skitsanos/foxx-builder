@@ -1,4 +1,5 @@
 .idea/
+.claude/
 development_notes/
 /node_modules/
 *.lock
