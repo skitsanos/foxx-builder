@@ -106,7 +106,8 @@ for (const col of collections) {
             db._createDocumentCollection(name);
         }
 
-        const { name: indexName = `index_${name}` } = index;
+        // Generate default index name for this collection
+        const indexName = `index_${name}`;
 
         // Drop all indexes except primary
         for (const ndx of db._collection(name).getIndexes()) {
@@ -119,13 +120,19 @@ for (const col of collections) {
 
         // Create indexes if not exists
         if (index && Array.isArray(index)) {
-            for (const ndx of index) {
+            for (let i = 0; i < index.length; i++) {
+                const ndx = index[i];
                 const { name: currentIndexName } = ndx;
                 if (!currentIndexName) {
-                    ndx.name = indexName;
+                    ndx.name = `${indexName}_${i}`;
                 }
                 console.log(`Creating index: ${ndx.name} on ${name}`);
-                db._collection(name).ensureIndex(ndx);
+                try {
+                    db._collection(name).ensureIndex(ndx);
+                } catch (error) {
+                    console.warn(`Failed to create index ${ndx.name} on ${name}: ${error.message}`);
+                    // Continue with other indexes
+                }
             }
         }
     }
