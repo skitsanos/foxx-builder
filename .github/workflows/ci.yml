@@ -56,14 +56,23 @@ jobs:
           total=0
           
           echo "Waiting for ArangoDB to be ready..."
+          echo "Checking container status..."
+          docker ps -a | grep arangodb-dev
+          echo "Checking container logs..."
+          docker logs arangodb-dev | tail -10
+          
           while [ $total -le $max_wait ]; do
-            if curl -f http://localhost:8529/_api/version > /dev/null 2>&1; then
+            echo "Testing connection to localhost:8529..."
+            if curl -f http://localhost:8529/_api/version 2>&1; then
               echo "ArangoDB is ready!"
               echo "Testing connection with credentials..."
-              if curl -f -u "root:${ARANGO_ROOT_PASSWORD}" http://localhost:8529/_api/version > /dev/null 2>&1; then
+              if curl -f -u "root:${ARANGO_ROOT_PASSWORD}" http://localhost:8529/_api/version 2>&1; then
                 echo "ArangoDB authentication working!"
                 break
               fi
+            else
+              echo "Connection failed, checking container status..."
+              docker ps -a | grep arangodb-dev
             fi
             echo "Wait ${total}s / ${max_wait}s"
             total=$((total + delay))
@@ -72,6 +81,8 @@ jobs:
           
           if [ $total -gt $max_wait ]; then
             echo "ArangoDB failed to start within ${max_wait}s"
+            echo "Final container logs:"
+            docker logs arangodb-dev | tail -20
             exit 1
           fi
 
