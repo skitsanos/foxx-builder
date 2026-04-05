@@ -3,6 +3,13 @@
 ![CI/CD Pipeline](https://github.com/skitsanos/foxx-builder/workflows/CI/CD%20Pipeline/badge.svg)
 ![Code Quality](https://github.com/skitsanos/foxx-builder/workflows/Code%20Quality/badge.svg)
 
+> [!WARNING]
+> **Foxx Builder is deprecated and no longer under active development.**
+>
+> ArangoDB removed Foxx microservices in ArangoDB v4.0, released as part of the Arango Contextual Data Platform v4.0 GA in March 2026. Because Foxx Builder is built specifically for Foxx, there will be no further feature development or long-term maintenance for this project.
+>
+> Existing Foxx services can continue to run on supported ArangoDB 3.x installations. If you are moving to ArangoDB v4.0 or later, plan to migrate your Foxx logic into external application services using an official ArangoDB driver.
+
 Build powerful database-driven microservices with **foxx-builder** – the modern, convention-based framework for ArangoDB Foxx.
 
 ## What is Foxx?
@@ -301,7 +308,7 @@ Configure authentication in the manifest.json file:
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+This project is kept for historical reference and for teams still running Foxx on ArangoDB 3.x. Pull requests may still be reviewed for critical fixes or documentation improvements, but no new feature work is planned.
 
 ## License
 
